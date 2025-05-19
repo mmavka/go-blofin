@@ -1,8 +1,10 @@
 package ws
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -246,5 +248,82 @@ func TestWSClientPushFundingRate(t *testing.T) {
 		}
 	case <-time.After(time.Second):
 		t.Error("timeout waiting for funding-rate push")
+	}
+}
+
+func TestWSClientSetURL(t *testing.T) {
+	upgrader := websocket.Upgrader{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			t.Fatalf("upgrade error: %v", err)
+		}
+	}))
+	defer server.Close()
+
+	url := "ws" + server.URL[len("http"):]
+	client := NewDefaultClient()
+	client.SetURL(url)
+	if client.url != url {
+		t.Errorf("url not updated: got %s, want %s", client.url, url)
+	}
+	err := client.Connect()
+	if err != nil {
+		t.Fatalf("connect error: %v", err)
+	}
+	client.Close()
+}
+
+func TestWSClientErrorHandler(t *testing.T) {
+	upgrader := websocket.Upgrader{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, err := upgrader.Upgrade(w, r, nil)
+		if err != nil {
+			t.Fatalf("upgrade error: %v", err)
+		}
+		conn.Close() // сразу закрываем соединение, чтобы вызвать ошибку у клиента
+	}))
+	defer server.Close()
+
+	url := "ws" + server.URL[len("http"):]
+	client := NewClient(url)
+	err := client.Connect()
+	if err != nil {
+		t.Fatalf("connect error: %v", err)
+	}
+	ch := make(chan error, 1)
+	client.SetErrorHandler(func(e error) {
+		ch <- e
+	})
+	// Ожидаем ошибку чтения
+	select {
+	case e := <-ch:
+		if e == nil {
+			t.Error("handler received nil error")
+		}
+	case <-time.After(time.Second):
+		t.Error("timeout waiting for error handler call")
+	}
+	client.Close()
+}
+
+func TestWSClientSubscribePrivateWithoutLogin(t *testing.T) {
+	client := NewDefaultClient()
+	err := client.Subscribe([]ChannelArgs{{Channel: "orders", InstId: "BTC-USDT"}})
+	if err == nil || err.Error() != "subscription to private channel 'orders' requires login" {
+		t.Errorf("expected error for private channel without login, got: %v", err)
+	}
+}
+
+func TestWSClientSubscribeExceedsLimit(t *testing.T) {
+	client := NewDefaultClient()
+	// Создаём много каналов, чтобы превысить лимит
+	channels := make([]ChannelArgs, 0, 500)
+	for i := 0; i < 500; i++ {
+		channels = append(channels, ChannelArgs{Channel: "trades", InstId: fmt.Sprintf("BTC-USDT-%d", i)})
+	}
+	err := client.Subscribe(channels)
+	if err == nil || !strings.HasPrefix(err.Error(), "subscription request exceeds 4096") {
+		t.Errorf("expected error for request size limit, got: %v", err)
 	}
 }

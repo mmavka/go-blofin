@@ -126,3 +126,24 @@ func TestGetCandlesService(t *testing.T) {
 		t.Errorf("unexpected response: %+v", resp)
 	}
 }
+
+func TestRestClientSetBaseURL(t *testing.T) {
+	called := false
+	newURL := "http://localhost:12345"
+	client := NewDefaultRestClient()
+	client.SetBaseURL(newURL)
+	if client.baseURL != newURL {
+		t.Errorf("baseURL not updated: got %s, want %s", client.baseURL, newURL)
+	}
+	// Проверим, что httpClient тоже обновлён (через SetBaseURL)
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		called = true
+		w.Write([]byte(`{"code":"0","data":[]}`))
+	}))
+	defer ts.Close()
+	client.SetBaseURL(ts.URL)
+	_, _ = client.NewGetInstrumentsService().Do(context.Background())
+	if !called {
+		t.Error("httpClient did not use new baseURL")
+	}
+}

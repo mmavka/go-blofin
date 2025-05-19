@@ -55,3 +55,12 @@ func (c *RestClient) addAuthHeaders(req *resty.Request, method, path, body strin
 	req.SetHeader("ACCESS-NONCE", nonce)
 	req.SetHeader("ACCESS-PASSPHRASE", c.passphrase)
 }
+
+func NewDefaultRestClient() *RestClient {
+	return NewRestClient("https://api.blofin.com")
+}
+
+func (c *RestClient) SetBaseURL(url string) {
+	c.baseURL = url
+	c.httpClient.SetBaseURL(url)
+}

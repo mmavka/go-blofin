@@ -17,6 +17,13 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+var privateChannels = map[string]struct{}{
+	"orders":      {},
+	"positions":   {},
+	"orders-algo": {},
+	// можно добавить другие приватные каналы по мере необходимости
+}
+
 type Client struct {
 	conn         *websocket.Conn
 	url          string
@@ -29,6 +36,8 @@ type Client struct {
 	fundingRates chan FundingRateWSMessage
 	closeChan    chan struct{}
 	once         sync.Once
+	errorHandler func(error)
+	isLoggedIn   bool
 }
 
 func NewClient(url string) *Client {
@@ -43,6 +52,10 @@ func NewClient(url string) *Client {
 		fundingRates: make(chan FundingRateWSMessage, 100),
 		closeChan:    make(chan struct{}),
 	}
+}
+
+func NewDefaultClient() *Client {
+	return NewClient("wss://ws.blofin.com/ws")
 }
 
 func (c *Client) Connect() error {
@@ -79,6 +92,9 @@ func (c *Client) readLoop() {
 	for {
 		_, msg, err := c.conn.ReadMessage()
 		if err != nil {
+			if c.errorHandler != nil {
+				c.errorHandler(err)
+			}
 			c.errors <- err
 			return
 		}
@@ -173,14 +189,32 @@ func (c *Client) Login(apiKey, secret, passphrase string) error {
 			Nonce:      nonce,
 		}},
 	}
-	return c.Send(login)
+	err := c.Send(login)
+	if err == nil {
+		c.isLoggedIn = true // простая логика, можно доработать по событию login success
+	}
+	return err
 }
 
 // Subscribe к каналам
 func (c *Client) Subscribe(channels []ChannelArgs) error {
+	// Проверка приватных каналов
+	for _, ch := range channels {
+		if _, ok := privateChannels[ch.Channel]; ok && !c.isLoggedIn {
+			return fmt.Errorf("subscription to private channel '%s' requires login", ch.Channel)
+		}
+	}
+	// Проверка длины запроса
 	req := SubscribeRequest{
 		Op:   "subscribe",
 		Args: channels,
+	}
+	data, err := json.Marshal(req)
+	if err != nil {
+		return err
+	}
+	if len(data) > 4096 {
+		return fmt.Errorf("subscription request exceeds 4096 bytes (actual: %d)", len(data))
 	}
 	return c.Send(req)
 }
@@ -235,9 +269,23 @@ func (c *Client) FundingRates() <-chan FundingRateWSMessage {
 }
 
 // Пример использования:
-// ws := ws.NewClient(wsUrl)
+// ws := ws.NewDefaultClient()
+// ws.SetErrorHandler(func(err error) {
+//     log.Printf("WebSocket error: %v", err)
+// })
 // err := ws.Connect()
+// if err != nil {
+//     log.Fatal(err)
+// }
 // _ = ws.Subscribe([]ws.ChannelArgs{{Channel: "trades", InstId: "ETH-USDT"}})
 // for trade := range ws.Trades() {
 //     fmt.Println(trade)
 // }
+
+func (c *Client) SetURL(url string) {
+	c.url = url
+}
+
+func (c *Client) SetErrorHandler(handler func(error)) {
+	c.errorHandler = handler
+}
