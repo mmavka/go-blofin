@@ -5,11 +5,210 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/stretchr/testify/assert"
 )
+
+var (
+	upgrader = websocket.Upgrader{
+		ReadBufferSize:  1024,
+		WriteBufferSize: 1024,
+	}
+
+	// Тестовые интервалы
+	testPingInterval = 100 * time.Millisecond
+	testPongTimeout  = 50 * time.Millisecond
+)
+
+type testServer struct {
+	t               *testing.T
+	server          *httptest.Server
+	conn            *websocket.Conn
+	mu              sync.Mutex
+	connectCount    int
+	lastConnectTime time.Time
+}
+
+func newTestServer(t *testing.T) *testServer {
+	ts := &testServer{t: t}
+	ts.server = httptest.NewServer(http.HandlerFunc(ts.handler))
+	return ts
+}
+
+func (ts *testServer) URL() string {
+	return "ws" + strings.TrimPrefix(ts.server.URL, "http")
+}
+
+func (ts *testServer) Close() {
+	if ts.conn != nil {
+		ts.conn.Close()
+	}
+	ts.server.Close()
+}
+
+func (ts *testServer) handler(w http.ResponseWriter, r *http.Request) {
+	ts.mu.Lock()
+	now := time.Now()
+	if now.Sub(ts.lastConnectTime) < reconnectDelay {
+		ts.t.Error("Connection attempt too soon after previous connection")
+	}
+	ts.lastConnectTime = now
+	ts.connectCount++
+	ts.mu.Unlock()
+
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		return
+	}
+	ts.conn = conn
+
+	go func() {
+		for {
+			_, msg, err := conn.ReadMessage()
+			if err != nil {
+				return
+			}
+			if string(msg) == "ping" {
+				conn.WriteMessage(websocket.TextMessage, []byte("pong"))
+			}
+		}
+	}()
+}
+
+func TestPingPong(t *testing.T) {
+	ts := newTestServer(t)
+	defer ts.Close()
+
+	client := NewClient(ts.URL())
+	client.SetErrorHandler(func(err error) {
+		t.Logf("Error handler called: %v", err)
+	})
+
+	// Используем тестовые интервалы
+	client.pingTimer = time.NewTimer(testPingInterval)
+	client.pongTimer = time.NewTimer(testPongTimeout)
+
+	err := client.Connect()
+	assert.NoError(t, err)
+
+	// Ждем несколько ping/pong циклов
+	time.Sleep(350 * time.Millisecond)
+
+	// Проверяем, что соединение живо
+	assert.NotNil(t, client.conn)
+	assert.False(t, client.reconnecting)
+}
+
+func TestReconnect(t *testing.T) {
+	ts := newTestServer(t)
+	defer ts.Close()
+
+	client := NewClient(ts.URL())
+
+	reconnected := make(chan struct{})
+	client.SetErrorHandler(func(err error) {
+		t.Logf("Error handler called: %v", err)
+		reconnected <- struct{}{}
+	})
+
+	err := client.Connect()
+	assert.NoError(t, err)
+
+	// Имитируем разрыв соединения
+	ts.conn.Close()
+
+	// Ждем переподключения
+	select {
+	case <-reconnected:
+		// Успешно
+	case <-time.After(2 * time.Second):
+		t.Fatal("Reconnect timeout")
+	}
+
+	assert.NotNil(t, client.conn)
+	assert.False(t, client.reconnecting)
+}
+
+func TestConnectionLimit(t *testing.T) {
+	ts := newTestServer(t)
+	defer ts.Close()
+
+	client := NewClient(ts.URL())
+
+	// Делаем несколько быстрых подключений с задержкой
+	for i := 0; i < 3; i++ {
+		err := client.Connect()
+		assert.NoError(t, err)
+		ts.conn.Close()            // Имитируем разрыв
+		time.Sleep(reconnectDelay) // Ждем перед следующим подключением
+	}
+
+	// Проверяем, что все подключения были успешны
+	assert.Equal(t, 3, ts.connectCount)
+}
+
+func TestStateRecovery(t *testing.T) {
+	ts := newTestServer(t)
+	defer ts.Close()
+
+	client := NewClient(ts.URL())
+
+	// Подключаемся и авторизуемся
+	err := client.Connect()
+	assert.NoError(t, err)
+
+	err = client.Login("test-key", "test-secret", "test-pass")
+	assert.NoError(t, err)
+
+	// Подписываемся на каналы
+	channels := []ChannelArgs{
+		{Channel: "trades", InstId: "BTC-USDT"},
+		{Channel: "tickers", InstId: "ETH-USDT"},
+	}
+	err = client.Subscribe(channels)
+	assert.NoError(t, err)
+
+	// Имитируем разрыв и переподключение
+	ts.conn.Close()
+
+	// Ждем переподключения
+	time.Sleep(2 * time.Second)
+
+	// Проверяем восстановление состояния
+	assert.True(t, client.isLoggedIn)
+	assert.Equal(t, len(channels), len(client.subscriptions))
+	assert.NotNil(t, client.credentials)
+}
+
+func TestErrorHandling(t *testing.T) {
+	ts := newTestServer(t)
+	defer ts.Close()
+
+	client := NewClient(ts.URL())
+
+	errors := make(chan error, 1)
+	client.SetErrorHandler(func(err error) {
+		errors <- err
+	})
+
+	err := client.Connect()
+	assert.NoError(t, err)
+
+	// Имитируем ошибку ping/pong
+	ts.conn.Close()
+
+	// Ждем обработки ошибки
+	select {
+	case err := <-errors:
+		assert.NotNil(t, err)
+	case <-time.After(time.Second):
+		t.Fatal("Error handler not called")
+	}
+}
 
 func TestWSClientBasic(t *testing.T) {
 	// TODO: реализовать тесты для login, subscribe, маршрутизации сообщений с использованием мок-соединения

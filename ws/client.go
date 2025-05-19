@@ -17,6 +17,15 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+const (
+	// Интервал для ping/pong (25 секунд < 30 секунд лимита)
+	pingInterval = 25 * time.Second
+	pongTimeout  = 5 * time.Second
+
+	// Ограничение на новые подключения
+	reconnectDelay = time.Second
+)
+
 var privateChannels = map[string]struct{}{
 	"orders":      {},
 	"positions":   {},
@@ -38,6 +47,25 @@ type Client struct {
 	once         sync.Once
 	errorHandler func(error)
 	isLoggedIn   bool
+
+	// Для ping/pong
+	pingTimer    *time.Timer
+	pongTimer    *time.Timer
+	lastPongTime time.Time
+
+	// Для переподключения
+	reconnecting bool
+	mu           sync.Mutex
+
+	// Сохранение подписок для переподключения
+	subscriptions []ChannelArgs
+	credentials   *LoginCredentials
+}
+
+type LoginCredentials struct {
+	ApiKey     string
+	Secret     string
+	Passphrase string
 }
 
 func NewClient(url string) *Client {
@@ -51,6 +79,7 @@ func NewClient(url string) *Client {
 		tickers:      make(chan TickerWSMessage, 100),
 		fundingRates: make(chan FundingRateWSMessage, 100),
 		closeChan:    make(chan struct{}),
+		lastPongTime: time.Now(),
 	}
 }
 
@@ -59,17 +88,112 @@ func NewDefaultClient() *Client {
 }
 
 func (c *Client) Connect() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.reconnecting {
+		time.Sleep(reconnectDelay) // Ограничение: 1 подключение в секунду
+	}
+
+	// Закрываем предыдущее соединение если есть
+	if c.conn != nil {
+		c.conn.Close()
+	}
+
 	u, err := url.Parse(c.url)
 	if err != nil {
 		return err
 	}
+
 	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
 		return err
 	}
+
 	c.conn = conn
+
+	// Настройка ping/pong
+	c.setupPingPong()
+
+	// Запуск чтения сообщений
 	go c.readLoop()
+
+	// Восстановление состояния после переподключения
+	if c.credentials != nil {
+		if err := c.Login(c.credentials.ApiKey, c.credentials.Secret, c.credentials.Passphrase); err != nil {
+			return fmt.Errorf("failed to restore login: %w", err)
+		}
+	}
+
+	if len(c.subscriptions) > 0 {
+		if err := c.Subscribe(c.subscriptions); err != nil {
+			return fmt.Errorf("failed to restore subscriptions: %w", err)
+		}
+	}
+
 	return nil
+}
+
+func (c *Client) setupPingPong() {
+	c.pingTimer = time.NewTimer(pingInterval)
+	c.pongTimer = time.NewTimer(pongTimeout)
+
+	// Обработчик pong сообщений
+	c.conn.SetPongHandler(func(string) error {
+		c.mu.Lock()
+		c.lastPongTime = time.Now()
+		c.pongTimer.Reset(pongTimeout)
+		c.mu.Unlock()
+		return nil
+	})
+
+	// Горутина для отправки ping
+	go func() {
+		for {
+			select {
+			case <-c.closeChan:
+				return
+			case <-c.pingTimer.C:
+				if err := c.Ping(); err != nil {
+					if c.errorHandler != nil {
+						c.errorHandler(fmt.Errorf("ping error: %w", err))
+					}
+					c.reconnect()
+					return
+				}
+				c.pingTimer.Reset(pingInterval)
+			case <-c.pongTimer.C:
+				if time.Since(c.lastPongTime) > pongTimeout {
+					if c.errorHandler != nil {
+						c.errorHandler(fmt.Errorf("pong timeout"))
+					}
+					c.reconnect()
+					return
+				}
+				c.pongTimer.Reset(pongTimeout)
+			}
+		}
+	}()
+}
+
+func (c *Client) reconnect() {
+	c.mu.Lock()
+	if c.reconnecting {
+		c.mu.Unlock()
+		return
+	}
+	c.reconnecting = true
+	c.mu.Unlock()
+
+	for {
+		if err := c.Connect(); err == nil {
+			c.mu.Lock()
+			c.reconnecting = false
+			c.mu.Unlock()
+			return
+		}
+		time.Sleep(reconnectDelay)
+	}
 }
 
 func (c *Client) Close() {
@@ -89,16 +213,33 @@ func (c *Client) Close() {
 }
 
 func (c *Client) readLoop() {
+	defer func() {
+		if r := recover(); r != nil {
+			if c.errorHandler != nil {
+				c.errorHandler(fmt.Errorf("panic in readLoop: %v", r))
+			}
+		}
+	}()
+
 	for {
 		_, msg, err := c.conn.ReadMessage()
 		if err != nil {
 			if c.errorHandler != nil {
 				c.errorHandler(err)
 			}
-			c.errors <- err
+			select {
+			case c.errors <- err:
+			default:
+			}
 			return
 		}
-		c.messages <- msg
+
+		select {
+		case c.messages <- msg:
+		default:
+			// Канал переполнен или закрыт, пропускаем
+			continue
+		}
 
 		// Базовая структура для определения типа события
 		var base struct {
@@ -119,7 +260,6 @@ func (c *Client) readLoop() {
 				select {
 				case c.trades <- tradeMsg:
 				default:
-					// канал переполнен, пропускаем
 				}
 			}
 		case "funding-rate":
@@ -128,7 +268,6 @@ func (c *Client) readLoop() {
 				select {
 				case c.fundingRates <- fundingMsg:
 				default:
-					// канал переполнен, пропускаем
 				}
 			}
 		case "tickers":
@@ -137,7 +276,6 @@ func (c *Client) readLoop() {
 				select {
 				case c.tickers <- tickerMsg:
 				default:
-					// канал переполнен, пропускаем
 				}
 			}
 		case "books", "books5":
@@ -146,7 +284,6 @@ func (c *Client) readLoop() {
 				select {
 				case c.orderBooks <- obMsg:
 				default:
-					// канал переполнен, пропускаем
 				}
 			}
 		default:
@@ -157,11 +294,9 @@ func (c *Client) readLoop() {
 					select {
 					case c.candles <- candleMsg:
 					default:
-						// канал переполнен, пропускаем
 					}
 				}
 			}
-			// Можно добавить обработку других каналов
 		}
 	}
 }
@@ -176,6 +311,12 @@ func (c *Client) Send(v any) error {
 
 // Login для приватных каналов
 func (c *Client) Login(apiKey, secret, passphrase string) error {
+	c.credentials = &LoginCredentials{
+		ApiKey:     apiKey,
+		Secret:     secret,
+		Passphrase: passphrase,
+	}
+
 	timestamp := fmt.Sprintf("%d", time.Now().UnixMilli())
 	nonce := timestamp
 	sign := SignWebSocketLogin(secret, timestamp, nonce)
@@ -191,20 +332,23 @@ func (c *Client) Login(apiKey, secret, passphrase string) error {
 	}
 	err := c.Send(login)
 	if err == nil {
-		c.isLoggedIn = true // простая логика, можно доработать по событию login success
+		c.isLoggedIn = true
 	}
 	return err
 }
 
 // Subscribe к каналам
 func (c *Client) Subscribe(channels []ChannelArgs) error {
+	// Сохраняем подписки для переподключения
+	c.subscriptions = append(c.subscriptions, channels...)
+
 	// Проверка приватных каналов
 	for _, ch := range channels {
 		if _, ok := privateChannels[ch.Channel]; ok && !c.isLoggedIn {
 			return fmt.Errorf("subscription to private channel '%s' requires login", ch.Channel)
 		}
 	}
-	// Проверка длины запроса
+
 	req := SubscribeRequest{
 		Op:   "subscribe",
 		Args: channels,
