@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestHandler_SubscribePositions(t *testing.T) {
@@ -626,4 +627,66 @@ func TestHandler_SubscribeAccount(t *testing.T) {
 
 	// Signal that we're done
 	close(done)
+}
+
+func TestHandlerEmptyOrderBook(t *testing.T) {
+	// Создаем mock соединение
+	conn := &websocket.Conn{}
+	h := NewHandler(conn)
+
+	// Тест пустого стакана
+	emptyBook := `{
+		"channel": "order-book",
+		"data": {
+			"bids": [],
+			"asks": []
+		}
+	}`
+
+	err := h.handleOrderBook([]byte(emptyBook))
+	assert.NoError(t, err)
+
+	book := h.GetOrderBook()
+	assert.NotNil(t, book)
+	assert.Empty(t, book.Bids)
+	assert.Empty(t, book.Asks)
+}
+
+func TestHandlerEmptyTicker(t *testing.T) {
+	// Создаем mock соединение
+	conn := &websocket.Conn{}
+	h := NewHandler(conn)
+
+	// Тест пустого тикера
+	emptyTicker := `{
+		"channel": "ticker",
+		"data": {
+			"lastPrice": "",
+			"lastSize": "",
+			"bestBidPrice": "",
+			"bestBidSize": "",
+			"bestAskPrice": "",
+			"bestAskSize": "",
+			"volume24h": "",
+			"priceChange": "",
+			"priceChangePercent": "",
+			"timestamp": 0
+		}
+	}`
+
+	err := h.handleTicker([]byte(emptyTicker))
+	assert.NoError(t, err)
+
+	ticker := h.GetTicker()
+	assert.NotNil(t, ticker)
+	assert.Equal(t, 0.0, ticker.LastPrice)
+	assert.Equal(t, 0.0, ticker.LastSize)
+	assert.Equal(t, 0.0, ticker.BestBidPrice)
+	assert.Equal(t, 0.0, ticker.BestBidSize)
+	assert.Equal(t, 0.0, ticker.BestAskPrice)
+	assert.Equal(t, 0.0, ticker.BestAskSize)
+	assert.Equal(t, 0.0, ticker.Volume24h)
+	assert.Equal(t, 0.0, ticker.PriceChange)
+	assert.Equal(t, 0.0, ticker.PriceChangePercent)
+	assert.Equal(t, int64(0), ticker.Timestamp)
 }

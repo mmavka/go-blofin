@@ -3,6 +3,7 @@ package ws
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/gorilla/websocket"
 )
@@ -14,6 +15,8 @@ type Handler struct {
 	ordersCallback     func(Order)
 	algoOrdersCallback func(AlgoOrder)
 	accountCallback    func(Account)
+	orderBook          *OrderBook
+	ticker             *Ticker
 }
 
 // NewHandler creates a new Handler
@@ -70,6 +73,97 @@ func (h *Handler) handleAccount(msg []byte) error {
 	}
 
 	h.accountCallback(accountData.Data)
+	return nil
+}
+
+// handleOrderBook handles order book channel messages
+func (h *Handler) handleOrderBook(data []byte) error {
+	var msg struct {
+		Data struct {
+			Bids [][]string `json:"bids"`
+			Asks [][]string `json:"asks"`
+		} `json:"data"`
+	}
+
+	if err := json.Unmarshal(data, &msg); err != nil {
+		return fmt.Errorf("failed to unmarshal order book: %w", err)
+	}
+
+	// Очищаем стакан если пришли пустые массивы
+	if len(msg.Data.Bids) == 0 && len(msg.Data.Asks) == 0 {
+		h.orderBook = &OrderBook{
+			Bids: make([]OrderBookEntry, 0),
+			Asks: make([]OrderBookEntry, 0),
+		}
+		return nil
+	}
+
+	// Обновляем стакан
+	h.orderBook = &OrderBook{
+		Bids: make([]OrderBookEntry, len(msg.Data.Bids)),
+		Asks: make([]OrderBookEntry, len(msg.Data.Asks)),
+	}
+
+	for i, bid := range msg.Data.Bids {
+		price, _ := strconv.ParseFloat(bid[0], 64)
+		size, _ := strconv.ParseFloat(bid[1], 64)
+		h.orderBook.Bids[i] = OrderBookEntry{Price: price, Size: size}
+	}
+
+	for i, ask := range msg.Data.Asks {
+		price, _ := strconv.ParseFloat(ask[0], 64)
+		size, _ := strconv.ParseFloat(ask[1], 64)
+		h.orderBook.Asks[i] = OrderBookEntry{Price: price, Size: size}
+	}
+
+	return nil
+}
+
+// handleTicker handles ticker channel messages
+func (h *Handler) handleTicker(data []byte) error {
+	var msg struct {
+		Data struct {
+			LastPrice          string `json:"lastPrice"`
+			LastSize           string `json:"lastSize"`
+			BestBidPrice       string `json:"bestBidPrice"`
+			BestBidSize        string `json:"bestBidSize"`
+			BestAskPrice       string `json:"bestAskPrice"`
+			BestAskSize        string `json:"bestAskSize"`
+			Volume24h          string `json:"volume24h"`
+			PriceChange        string `json:"priceChange"`
+			PriceChangePercent string `json:"priceChangePercent"`
+			Timestamp          int64  `json:"timestamp"`
+		} `json:"data"`
+	}
+
+	if err := json.Unmarshal(data, &msg); err != nil {
+		return fmt.Errorf("failed to unmarshal ticker: %w", err)
+	}
+
+	// Обрабатываем null значения
+	lastPrice, _ := strconv.ParseFloat(msg.Data.LastPrice, 64)
+	lastSize, _ := strconv.ParseFloat(msg.Data.LastSize, 64)
+	bestBidPrice, _ := strconv.ParseFloat(msg.Data.BestBidPrice, 64)
+	bestBidSize, _ := strconv.ParseFloat(msg.Data.BestBidSize, 64)
+	bestAskPrice, _ := strconv.ParseFloat(msg.Data.BestAskPrice, 64)
+	bestAskSize, _ := strconv.ParseFloat(msg.Data.BestAskSize, 64)
+	volume24h, _ := strconv.ParseFloat(msg.Data.Volume24h, 64)
+	priceChange, _ := strconv.ParseFloat(msg.Data.PriceChange, 64)
+	priceChangePercent, _ := strconv.ParseFloat(msg.Data.PriceChangePercent, 64)
+
+	h.ticker = &Ticker{
+		LastPrice:          lastPrice,
+		LastSize:           lastSize,
+		BestBidPrice:       bestBidPrice,
+		BestBidSize:        bestBidSize,
+		BestAskPrice:       bestAskPrice,
+		BestAskSize:        bestAskSize,
+		Volume24h:          volume24h,
+		PriceChange:        priceChange,
+		PriceChangePercent: priceChangePercent,
+		Timestamp:          msg.Data.Timestamp,
+	}
+
 	return nil
 }
 
@@ -229,6 +323,24 @@ func (h *Handler) HandleMessages() error {
 			if err := h.handleAccount(msg); err != nil {
 				return fmt.Errorf("failed to handle account message: %w", err)
 			}
+		case "order-book":
+			if err := h.handleOrderBook(msg); err != nil {
+				return fmt.Errorf("failed to handle order book message: %w", err)
+			}
+		case "ticker":
+			if err := h.handleTicker(msg); err != nil {
+				return fmt.Errorf("failed to handle ticker message: %w", err)
+			}
 		}
 	}
+}
+
+// GetOrderBook returns the current order book state
+func (h *Handler) GetOrderBook() *OrderBook {
+	return h.orderBook
+}
+
+// GetTicker returns the current ticker state
+func (h *Handler) GetTicker() *Ticker {
+	return h.ticker
 }

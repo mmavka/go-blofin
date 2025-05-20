@@ -8,12 +8,19 @@
 package rest
 
 import (
+	"context"
+	"fmt"
+	"io"
 	"time"
 
 	"github.com/go-resty/resty/v2"
 	"github.com/google/uuid"
+	"github.com/mmavka/go-blofin"
 	"github.com/mmavka/go-blofin/auth"
 )
+
+// UseTestnet use testnet
+var UseTestnet = false
 
 // RestClient основной клиент для работы с REST API BloFin
 // Позже будет расширен приватными методами и middleware для подписи
@@ -28,8 +35,9 @@ type RestClient struct {
 
 // NewRestClient создает новый экземпляр RestClient
 func NewRestClient(baseURL string) *RestClient {
-	client := resty.New()
-	client.SetBaseURL(baseURL)
+	client := resty.New().
+		SetTimeout(10 * time.Second).
+		SetBaseURL(baseURL)
 	return &RestClient{
 		baseURL:    baseURL,
 		httpClient: client,
@@ -56,11 +64,50 @@ func (c *RestClient) addAuthHeaders(req *resty.Request, method, path, body strin
 	req.SetHeader("ACCESS-PASSPHRASE", c.passphrase)
 }
 
+// NewDefaultRestClient creates a new REST client with default settings
 func NewDefaultRestClient() *RestClient {
-	return NewRestClient(DefaultBaseURL)
+	return NewRestClient(blofin.DefaultBaseURL)
 }
 
 func (c *RestClient) SetBaseURL(url string) {
 	c.baseURL = url
-	c.httpClient.SetBaseURL(url)
+}
+
+// GetBaseURL returns the base URL
+func (c *RestClient) GetBaseURL() string {
+	return c.baseURL
+}
+
+// GetAPIKey returns the API key
+func (c *RestClient) GetAPIKey() string {
+	return c.apiKey
+}
+
+// GetSecretKey returns the secret key
+func (c *RestClient) GetSecretKey() string {
+	return c.apiSecret
+}
+
+// GetHTTPClient returns the HTTP client
+func (c *RestClient) GetHTTPClient() *resty.Client {
+	return c.httpClient
+}
+
+// Request sends a request to the API
+func (c *RestClient) Request(ctx context.Context, method, path string, body io.Reader) (*resty.Response, error) {
+	req := c.httpClient.R().SetContext(ctx)
+	if body != nil {
+		req.SetBody(body)
+	}
+
+	if c.apiKey != "" {
+		req.SetHeader("X-API-KEY", c.apiKey)
+	}
+
+	resp, err := req.Execute(method, path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+
+	return resp, nil
 }

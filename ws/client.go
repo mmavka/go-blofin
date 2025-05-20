@@ -8,21 +8,21 @@
 package ws
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"net/url"
 	"sync"
 	"time"
 
-	json "github.com/goccy/go-json"
 	"github.com/gorilla/websocket"
-	"github.com/mmavka/go-blofin/rest"
+	"github.com/mmavka/go-blofin"
 )
 
 const (
 	// Ping/pong interval (10 seconds < 30 seconds limit)
-	pingInterval = 10 * time.Second
-	pongTimeout  = 3 * time.Second
+	pingInterval = 20 * time.Second
+	pongTimeout  = 10 * time.Second
 
 	// New connection limit
 	reconnectDelay = 500 * time.Millisecond
@@ -30,10 +30,35 @@ const (
 )
 
 var privateChannels = map[string]struct{}{
-	"orders":      {},
-	"positions":   {},
-	"orders-algo": {},
+	blofin.ChannelOrders:     {},
+	blofin.ChannelPositions:  {},
+	blofin.ChannelOrdersAlgo: {},
 	// can add other private channels as needed
+}
+
+// UseTestnet use testnet
+var UseTestnet = false
+
+// WsHandler handle raw websocket message
+type WsHandler func(message []byte)
+
+// ErrHandler handles errors
+type ErrHandler func(err error)
+
+// WsConfig webservice configuration
+type WsConfig struct {
+	Endpoint string
+}
+
+// WsClient is websocket client
+type WsClient struct {
+	config     *WsConfig
+	conn       *websocket.Conn
+	mu         sync.RWMutex
+	stopC      chan struct{}
+	doneC      chan struct{}
+	handler    WsHandler
+	errHandler ErrHandler
 }
 
 type Client struct {
@@ -63,12 +88,163 @@ type Client struct {
 	// Save subscriptions for reconnection
 	subscriptions []ChannelArgs
 	credentials   *LoginCredentials
+
+	// Keepalive
+	resetKeepAlive func()
+	handlePong     func()
 }
 
 type LoginCredentials struct {
 	ApiKey     string
 	Secret     string
 	Passphrase string
+}
+
+// NewWsClient creates a new websocket client
+func NewWsClient(config *WsConfig) *WsClient {
+	return &WsClient{
+		config: config,
+		stopC:  make(chan struct{}),
+		doneC:  make(chan struct{}),
+	}
+}
+
+// SetHandler sets the message handler
+func (c *WsClient) SetHandler(handler WsHandler) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.handler = handler
+}
+
+// SetErrHandler sets the error handler
+func (c *WsClient) SetErrHandler(errHandler ErrHandler) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.errHandler = errHandler
+}
+
+// Connect connects to the websocket server
+func (c *WsClient) Connect() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.conn != nil {
+		return fmt.Errorf("already connected")
+	}
+
+	conn, _, err := websocket.DefaultDialer.Dial(c.config.Endpoint, nil)
+	if err != nil {
+		return fmt.Errorf("failed to dial websocket: %w", err)
+	}
+
+	c.conn = conn
+	go c.readMessages()
+	return nil
+}
+
+// Close closes the websocket connection
+func (c *WsClient) Close() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.conn == nil {
+		return fmt.Errorf("not connected")
+	}
+
+	close(c.stopC)
+	<-c.doneC
+
+	err := c.conn.Close()
+	c.conn = nil
+	return err
+}
+
+// readMessages reads messages from the websocket connection
+func (c *WsClient) readMessages() {
+	defer close(c.doneC)
+
+	for {
+		select {
+		case <-c.stopC:
+			return
+		default:
+			_, message, err := c.conn.ReadMessage()
+			if err != nil {
+				c.mu.RLock()
+				if c.errHandler != nil {
+					c.errHandler(err)
+				}
+				c.mu.RUnlock()
+				return
+			}
+
+			c.mu.RLock()
+			if c.handler != nil {
+				c.handler(message)
+			}
+			c.mu.RUnlock()
+		}
+	}
+}
+
+// WriteMessage writes a message to the websocket connection
+func (c *WsClient) WriteMessage(messageType int, data []byte) error {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	if c.conn == nil {
+		return fmt.Errorf("not connected")
+	}
+
+	return c.conn.WriteMessage(messageType, data)
+}
+
+// WsServe starts websocket connection and handles messages
+func WsServe(config *WsConfig, handler WsHandler, errHandler ErrHandler) (doneC, stopC chan struct{}, err error) {
+	client := NewWsClient(config)
+	client.SetHandler(handler)
+	client.SetErrHandler(errHandler)
+
+	if err := client.Connect(); err != nil {
+		return nil, nil, err
+	}
+
+	return client.doneC, client.stopC, nil
+}
+
+// getWsEndpoint return the base endpoint of the WS according the UseTestnet flag
+func getWsEndpoint() string {
+	if UseTestnet {
+		return blofin.TestnetWSPublic
+	}
+	return blofin.DefaultWSPublic
+}
+
+// WsUserDataServe starts user data stream websocket connection
+func WsUserDataServe(listenKey string, handler WsHandler, errHandler ErrHandler) (doneC, stopC chan struct{}, err error) {
+	endpoint := fmt.Sprintf("%s/%s", blofin.DefaultWSPrivate, listenKey)
+	config := &WsConfig{
+		Endpoint: endpoint,
+	}
+	return WsServe(config, handler, errHandler)
+}
+
+// WsMarketDataServe starts market data stream websocket connection
+func WsMarketDataServe(symbol string, handler WsHandler, errHandler ErrHandler) (doneC, stopC chan struct{}, err error) {
+	endpoint := fmt.Sprintf("%s/market/%s", blofin.DefaultWSPublic, symbol)
+	config := &WsConfig{
+		Endpoint: endpoint,
+	}
+	return WsServe(config, handler, errHandler)
+}
+
+// WsAccountDataServe starts account data stream websocket connection
+func WsAccountDataServe(apiKey, secretKey string, handler WsHandler, errHandler ErrHandler) (doneC, stopC chan struct{}, err error) {
+	endpoint := fmt.Sprintf("%s/account/%s", blofin.DefaultWSPrivate, apiKey)
+	config := &WsConfig{
+		Endpoint: endpoint,
+	}
+	return WsServe(config, handler, errHandler)
 }
 
 func NewClient(url string) *Client {
@@ -86,8 +262,9 @@ func NewClient(url string) *Client {
 	}
 }
 
+// NewDefaultClient creates a new WebSocket client with default settings
 func NewDefaultClient() *Client {
-	return NewClient(rest.DefaultWSPublic)
+	return NewClient(blofin.DefaultWSPublic)
 }
 
 func (c *Client) Connect() error {
@@ -127,7 +304,7 @@ func (c *Client) Connect() error {
 	c.conn = conn
 
 	// Setup ping/pong
-	c.setupPingPong()
+	c.startKeepAlive()
 
 	// Start message reading
 	go c.readLoop()
@@ -148,47 +325,60 @@ func (c *Client) Connect() error {
 	return nil
 }
 
-func (c *Client) setupPingPong() {
+func (c *Client) startKeepAlive() {
+	pongCh := make(chan struct{}, 1)
 	c.pingTimer = time.NewTimer(pingInterval)
-	c.pongTimer = time.NewTimer(pongTimeout)
 
-	// Pong message handler
-	c.conn.SetPongHandler(func(string) error {
-		c.mu.Lock()
-		c.lastPongTime = time.Now()
-		c.pongTimer.Reset(pongTimeout)
-		c.conn.SetReadDeadline(time.Now().Add(pongTimeout * 2))
-		c.mu.Unlock()
-		return nil
-	})
-
-	// Goroutine for sending ping
 	go func() {
 		for {
 			select {
 			case <-c.closeChan:
 				return
 			case <-c.pingTimer.C:
-				if err := c.Ping(); err != nil {
+				// Отправить текстовый ping
+				if err := c.conn.WriteMessage(websocket.TextMessage, []byte("ping")); err != nil {
 					if c.errorHandler != nil {
 						c.errorHandler(fmt.Errorf("ping error: %w", err))
 					}
 					c.reconnect()
 					return
 				}
-				c.pingTimer.Reset(pingInterval)
-			case <-c.pongTimer.C:
-				if time.Since(c.lastPongTime) > pongTimeout {
+				// Ждать pong
+				pongTimer := time.NewTimer(pongTimeout)
+				select {
+				case <-pongCh:
+					// pong получен, продолжаем
+					pongTimer.Stop()
+				case <-pongTimer.C:
 					if c.errorHandler != nil {
-						c.errorHandler(fmt.Errorf("pong timeout after %v", time.Since(c.lastPongTime)))
+						c.errorHandler(fmt.Errorf("pong timeout"))
 					}
 					c.reconnect()
 					return
 				}
-				c.pongTimer.Reset(pongTimeout)
+				c.pingTimer.Reset(pingInterval)
 			}
 		}
 	}()
+
+	// Сброс таймера на любое входящее сообщение
+	c.resetKeepAlive = func() {
+		if !c.pingTimer.Stop() {
+			select {
+			case <-c.pingTimer.C:
+			default:
+			}
+		}
+		c.pingTimer.Reset(pingInterval)
+	}
+
+	// Обработка pong
+	c.handlePong = func() {
+		select {
+		case pongCh <- struct{}{}:
+		default:
+		}
+	}
 }
 
 func (c *Client) reconnect() {
@@ -246,100 +436,105 @@ func (c *Client) Close() {
 func (c *Client) readLoop() {
 	defer func() {
 		if r := recover(); r != nil {
-			if c.errorHandler != nil {
-				c.errorHandler(fmt.Errorf("panic in readLoop: %v", r))
-			}
-			c.reconnect()
+			c.errorHandler(fmt.Errorf("panic in readLoop: %v", r))
 		}
 	}()
 
 	for {
-		_, msg, err := c.conn.ReadMessage()
-		if err != nil {
-			if c.errorHandler != nil {
-				c.errorHandler(err)
-			}
-			select {
-			case c.errors <- err:
-			default:
-			}
-			c.reconnect()
-			return
-		}
-
-		// Reset read deadline after successful read
-		c.conn.SetReadDeadline(time.Now().Add(pongTimeout * 2))
-
 		select {
-		case c.messages <- msg:
+		case <-c.closeChan:
+			return
 		default:
-			// Channel overflow or closed, skip
-			continue
-		}
+			_, message, err := c.conn.ReadMessage()
+			if err != nil {
+				c.errorHandler(fmt.Errorf("WebSocket error: %v", err))
+				c.reconnect()
+				return
+			}
 
-		// Base structure for event type determination
-		var base struct {
-			Arg struct {
-				Channel string `json:"channel"`
-			} `json:"arg"`
-			Op    string `json:"op"`
-			Event string `json:"event"`
-		}
-		if err := json.Unmarshal(msg, &base); err != nil {
-			continue
-		}
+			// Reset keepalive timer on any message
+			if c.resetKeepAlive != nil {
+				c.resetKeepAlive()
+			}
 
-		// Handle ping/pong messages
-		if base.Op == "pong" {
-			c.mu.Lock()
-			c.lastPongTime = time.Now()
-			c.pongTimer.Reset(pongTimeout)
-			c.conn.SetReadDeadline(time.Now().Add(pongTimeout * 2))
-			c.mu.Unlock()
-			continue
-		}
+			// Handle pong message
+			if string(message) == "pong" {
+				if c.handlePong != nil {
+					c.handlePong()
+				}
+				continue
+			}
 
-		switch base.Arg.Channel {
-		case "trades":
-			var tradeMsg TradeWSMessage
-			if err := json.Unmarshal(msg, &tradeMsg); err == nil {
-				select {
-				case c.trades <- tradeMsg:
-				default:
-				}
+			// Try to parse as JSON
+			var msg map[string]interface{}
+			if err := json.Unmarshal(message, &msg); err != nil {
+				c.errorHandler(fmt.Errorf("failed to parse message: %v", err))
+				continue
 			}
-		case "funding-rate":
-			var fundingMsg FundingRateWSMessage
-			if err := json.Unmarshal(msg, &fundingMsg); err == nil {
-				select {
-				case c.fundingRates <- fundingMsg:
-				default:
+
+			// Handle ping message
+			if event, ok := msg["event"].(string); ok && event == "ping" {
+				if err := c.Send(map[string]string{"event": "pong"}); err != nil {
+					c.errorHandler(fmt.Errorf("failed to send pong: %v", err))
 				}
+				continue
 			}
-		case "tickers":
-			var tickerMsg TickerWSMessage
-			if err := json.Unmarshal(msg, &tickerMsg); err == nil {
-				select {
-				case c.tickers <- tickerMsg:
-				default:
-				}
+
+			// Send to messages channel
+			select {
+			case c.messages <- message:
+			default:
+				// Channel is full, skip message
 			}
-		case "books", "books5":
-			var obMsg OrderBookWSMessage
-			if err := json.Unmarshal(msg, &obMsg); err == nil {
-				select {
-				case c.orderBooks <- obMsg:
-				default:
-				}
-			}
-		default:
-			// Check for candles (channel starts with candle)
-			if len(base.Arg.Channel) >= 6 && base.Arg.Channel[:6] == "candle" {
-				var candleMsg CandleWSMessage
-				if err := json.Unmarshal(msg, &candleMsg); err == nil {
-					select {
-					case c.candles <- candleMsg:
-					default:
+
+			// Try to parse as specific message type
+			if arg, ok := msg["arg"].(map[string]interface{}); ok {
+				channel, _ := arg["channel"].(string)
+				switch channel {
+				case "trades":
+					var tradeMsg TradeWSMessage
+					if err := json.Unmarshal(message, &tradeMsg); err == nil {
+						select {
+						case c.trades <- tradeMsg:
+						default:
+							// Channel is full, skip message
+						}
+					}
+				case "candle1m", "candle5m", "candle15m", "candle30m", "candle1h", "candle2h", "candle4h", "candle6h", "candle12h", "candle1d", "candle1w", "candle1M":
+					var candleMsg CandleWSMessage
+					if err := json.Unmarshal(message, &candleMsg); err == nil {
+						select {
+						case c.candles <- candleMsg:
+						default:
+							// Channel is full, skip message
+						}
+					}
+				case "books":
+					var bookMsg OrderBookWSMessage
+					if err := json.Unmarshal(message, &bookMsg); err == nil {
+						select {
+						case c.orderBooks <- bookMsg:
+						default:
+							// Channel is full, skip message
+						}
+					}
+				case "tickers":
+					var tickerMsg TickerWSMessage
+					if err := json.Unmarshal(message, &tickerMsg); err == nil {
+						select {
+						case c.tickers <- tickerMsg:
+						default:
+							// Channel is full, skip message
+						}
+					}
+				case "funding-rate":
+					var frMsg FundingRateWSMessage
+					if err := json.Unmarshal(message, &frMsg); err == nil {
+						select {
+						case c.fundingRates <- frMsg:
+						default:
+							// Channel is full, skip message
+						}
 					}
 				}
 			}
@@ -416,11 +611,6 @@ func (c *Client) Unsubscribe(channels []ChannelArgs) error {
 		Args: channels,
 	}
 	return c.Send(req)
-}
-
-// Ping send ping
-func (c *Client) Ping() error {
-	return c.conn.WriteMessage(websocket.TextMessage, []byte("ping"))
 }
 
 // Messages returns channel for reading messages

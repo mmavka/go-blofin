@@ -26,23 +26,38 @@ type LoginArgs struct {
 	Nonce      string `json:"nonce"`
 }
 
-// SubscribeRequest for channel subscription
-
-type SubscribeRequest struct {
-	Op   string        `json:"op"`
-	Args []ChannelArgs `json:"args"`
-}
-
+// ChannelArgs represents subscription channel arguments
 type ChannelArgs struct {
 	Channel string `json:"channel"`
 	InstId  string `json:"instId"`
 }
 
-// UnsubscribeRequest for channel unsubscription
+// SubscribeRequest represents subscription request
+type SubscribeRequest struct {
+	Op   string        `json:"op"`
+	Args []ChannelArgs `json:"args"`
+}
 
+// UnsubscribeRequest represents unsubscription request
 type UnsubscribeRequest struct {
 	Op   string        `json:"op"`
 	Args []ChannelArgs `json:"args"`
+}
+
+// SubscribeResponse represents subscription response
+type SubscribeResponse struct {
+	Event string      `json:"event"`
+	Arg   ChannelArgs `json:"arg"`
+	Code  string      `json:"code,omitempty"`
+	Msg   string      `json:"msg,omitempty"`
+}
+
+// UnsubscribeResponse represents unsubscription response
+type UnsubscribeResponse struct {
+	Event string      `json:"event"`
+	Arg   ChannelArgs `json:"arg"`
+	Code  string      `json:"code,omitempty"`
+	Msg   string      `json:"msg,omitempty"`
 }
 
 // EventResponse for handling login/subscribe/unsubscribe events
@@ -371,4 +386,30 @@ type AccountDetail struct {
 	Liability             string `json:"liability"`
 	BorrowFrozen          string `json:"borrowFrozen"`
 	MarginRatio           string `json:"marginRatio"`
+}
+
+// OrderBookEntry represents a single entry in the order book
+type OrderBookEntry struct {
+	Price float64
+	Size  float64
+}
+
+// OrderBook represents the current state of the order book
+type OrderBook struct {
+	Bids []OrderBookEntry
+	Asks []OrderBookEntry
+}
+
+// Ticker represents the current market ticker
+type Ticker struct {
+	LastPrice          float64
+	LastSize           float64
+	BestBidPrice       float64
+	BestBidSize        float64
+	BestAskPrice       float64
+	BestAskSize        float64
+	Volume24h          float64
+	PriceChange        float64
+	PriceChangePercent float64
+	Timestamp          int64
 }

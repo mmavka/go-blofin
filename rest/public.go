@@ -9,6 +9,7 @@ package rest
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 )
@@ -36,11 +37,14 @@ func (s *GetInstrumentsService) Do(ctx context.Context) (*InstrumentsResponse, e
 	if s.instId != "" {
 		req.SetQueryParam("instId", s.instId)
 	}
-	r, err := req.Get("/api/v1/market/instruments")
+	r, err := s.c.Request(ctx, "GET", "/api/v1/market/instruments", nil)
 	if err != nil {
 		return nil, err
 	}
-	return r.Result().(*InstrumentsResponse), nil
+	if err := json.Unmarshal(r.Body(), resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+	return resp, nil
 }
 
 // --- Tickers Service ---
@@ -64,11 +68,14 @@ func (s *GetTickersService) Do(ctx context.Context) (*TickersResponse, error) {
 	if s.instId != "" {
 		req.SetQueryParam("instId", s.instId)
 	}
-	r, err := req.Get("/api/v1/market/tickers")
+	r, err := s.c.Request(ctx, "GET", "/api/v1/market/tickers", nil)
 	if err != nil {
 		return nil, err
 	}
-	return r.Result().(*TickersResponse), nil
+	if err := json.Unmarshal(r.Body(), resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+	return resp, nil
 }
 
 // --- OrderBook Service ---
@@ -97,7 +104,8 @@ func (s *GetOrderBookService) Do(ctx context.Context) (*OrderBookResponse, error
 		return nil, ErrMissingInstID
 	}
 	resp := &OrderBookResponse{}
-	req := s.c.httpClient.R().SetContext(ctx).SetResult(resp).SetQueryParam("instId", s.instId)
+	req := s.c.httpClient.R().SetContext(ctx).SetResult(resp)
+	req.SetQueryParam("instId", s.instId)
 	if s.size > 0 {
 		req.SetQueryParam("size", fmt.Sprintf("%d", s.size))
 	}
@@ -105,7 +113,10 @@ func (s *GetOrderBookService) Do(ctx context.Context) (*OrderBookResponse, error
 	if err != nil {
 		return nil, err
 	}
-	return r.Result().(*OrderBookResponse), nil
+	if err := json.Unmarshal(r.Body(), resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+	return resp, nil
 }
 
 // --- Trades Service ---
@@ -138,11 +149,14 @@ func (s *GetTradesService) Do(ctx context.Context) (*TradesResponse, error) {
 	if s.limit > 0 {
 		req.SetQueryParam("limit", fmt.Sprintf("%d", s.limit))
 	}
-	r, err := req.Get("/api/v1/market/trades")
+	r, err := s.c.Request(ctx, "GET", "/api/v1/market/trades", nil)
 	if err != nil {
 		return nil, err
 	}
-	return r.Result().(*TradesResponse), nil
+	if err := json.Unmarshal(r.Body(), resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+	return resp, nil
 }
 
 // --- MarkPrice Service ---
@@ -166,11 +180,14 @@ func (s *GetMarkPriceService) Do(ctx context.Context) (*MarkPriceResponse, error
 	if s.instId != "" {
 		req.SetQueryParam("instId", s.instId)
 	}
-	r, err := req.Get("/api/v1/market/mark-price")
+	r, err := s.c.Request(ctx, "GET", "/api/v1/market/mark-price", nil)
 	if err != nil {
 		return nil, err
 	}
-	return r.Result().(*MarkPriceResponse), nil
+	if err := json.Unmarshal(r.Body(), resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+	return resp, nil
 }
 
 // --- FundingRateHistory Service ---
@@ -285,9 +302,12 @@ func (s *GetCandlesService) Do(ctx context.Context) (*CandlesResponse, error) {
 	if s.limit > 0 {
 		req.SetQueryParam("limit", fmt.Sprintf("%d", s.limit))
 	}
-	r, err := req.Get("/api/v1/market/candles")
+	r, err := s.c.Request(ctx, "GET", "/api/v1/market/candles", nil)
 	if err != nil {
 		return nil, err
 	}
-	return r.Result().(*CandlesResponse), nil
+	if err := json.Unmarshal(r.Body(), resp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+	return resp, nil
 }

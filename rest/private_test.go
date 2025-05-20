@@ -8,20 +8,20 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/go-resty/resty/v2"
+	"github.com/mmavka/go-blofin"
 	"github.com/stretchr/testify/assert"
 )
 
 func newTestClient(t *testing.T) *RestClient {
-	client := NewRestClient("https://api.blofin.com")
-	client.SetAuth("test-key", "test-secret", "test-pass")
+	client := NewRestClient("http://localhost:8080")
+	client.SetAuth("test-key", "test-secret", "test-passphrase")
 	return client
 }
 
 func newTestPrivateRestClient(handler http.HandlerFunc) *RestClient {
-	ts := httptest.NewServer(handler)
-	client := NewRestClient(ts.URL)
-	client.SetAuth("key", "secret", "pass")
+	server := httptest.NewServer(handler)
+	client := NewRestClient(server.URL)
+	client.SetAuth("test-key", "test-secret", "test-passphrase")
 	return client
 }
 
@@ -224,7 +224,7 @@ func TestGetMarginModeService(t *testing.T) {
 	// Check response data
 	assert.Equal(t, "0", marginMode.Code)
 	assert.Equal(t, "success", marginMode.Msg)
-	assert.Equal(t, MarginModeIsolated, marginMode.Data.MarginMode)
+	assert.Equal(t, blofin.MarginModeIsolated, marginMode.Data.MarginMode)
 }
 
 func TestSetMarginModeService(t *testing.T) {
@@ -244,7 +244,7 @@ func TestSetMarginModeService(t *testing.T) {
 		var req SetMarginModeRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		assert.NoError(t, err)
-		assert.Equal(t, MarginModeIsolated, req.MarginMode)
+		assert.Equal(t, blofin.MarginModeIsolated, req.MarginMode)
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -261,12 +261,12 @@ func TestSetMarginModeService(t *testing.T) {
 	client.SetBaseURL(server.URL)
 
 	// Test success
-	marginMode, err := client.SetMarginMode().MarginMode(MarginModeIsolated).Do(context.Background())
+	marginMode, err := client.SetMarginMode().MarginMode(blofin.MarginModeIsolated).Do(context.Background())
 	assert.NoError(t, err)
 	assert.NotNil(t, marginMode)
 	assert.Equal(t, "0", marginMode.Code)
 	assert.Equal(t, "success", marginMode.Msg)
-	assert.Equal(t, MarginModeIsolated, marginMode.Data.MarginMode)
+	assert.Equal(t, blofin.MarginModeIsolated, marginMode.Data.MarginMode)
 
 	// Test with empty marginMode
 	_, err = client.SetMarginMode().Do(context.Background())
@@ -309,7 +309,7 @@ func TestGetPositionModeService(t *testing.T) {
 	// Check response data
 	assert.Equal(t, "0", positionMode.Code)
 	assert.Equal(t, "success", positionMode.Msg)
-	assert.Equal(t, PositionModeNet, positionMode.Data.PositionMode)
+	assert.Equal(t, blofin.PositionModeNet, positionMode.Data.PositionMode)
 }
 
 func TestSetPositionModeService(t *testing.T) {
@@ -329,7 +329,7 @@ func TestSetPositionModeService(t *testing.T) {
 		var req SetPositionModeRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		assert.NoError(t, err)
-		assert.Equal(t, PositionModeNet, req.PositionMode)
+		assert.Equal(t, blofin.PositionModeNet, req.PositionMode)
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -346,12 +346,12 @@ func TestSetPositionModeService(t *testing.T) {
 	client.SetBaseURL(server.URL)
 
 	// Test successful request
-	positionMode, err := client.SetPositionMode().PositionMode(PositionModeNet).Do(context.Background())
+	positionMode, err := client.SetPositionMode().PositionMode(blofin.PositionModeNet).Do(context.Background())
 	assert.NoError(t, err)
 	assert.NotNil(t, positionMode)
 	assert.Equal(t, "0", positionMode.Code)
 	assert.Equal(t, "success", positionMode.Msg)
-	assert.Equal(t, PositionModeNet, positionMode.Data.PositionMode)
+	assert.Equal(t, blofin.PositionModeNet, positionMode.Data.PositionMode)
 
 	// Test with empty positionMode
 	_, err = client.SetPositionMode().Do(context.Background())
@@ -374,7 +374,7 @@ func TestGetLeverageInfoService(t *testing.T) {
 
 		// Check request parameters
 		assert.Equal(t, "BTC-USDT", r.URL.Query().Get("instId"))
-		assert.Equal(t, MarginModeCross, r.URL.Query().Get("marginMode"))
+		assert.Equal(t, blofin.MarginModeCross, r.URL.Query().Get("marginMode"))
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -395,7 +395,7 @@ func TestGetLeverageInfoService(t *testing.T) {
 	// Test successful request
 	leverage, err := client.GetLeverageInfo().
 		InstId("BTC-USDT").
-		MarginMode(MarginModeCross).
+		MarginMode(blofin.MarginModeCross).
 		Do(context.Background())
 	assert.NoError(t, err)
 	assert.NotNil(t, leverage)
@@ -403,10 +403,10 @@ func TestGetLeverageInfoService(t *testing.T) {
 	assert.Equal(t, "success", leverage.Msg)
 	assert.Equal(t, "BTC-USDT", leverage.Data.InstId)
 	assert.Equal(t, "3", leverage.Data.Leverage)
-	assert.Equal(t, MarginModeCross, leverage.Data.MarginMode)
+	assert.Equal(t, blofin.MarginModeCross, leverage.Data.MarginMode)
 
 	// Test with empty instId
-	_, err = client.GetLeverageInfo().MarginMode(MarginModeCross).Do(context.Background())
+	_, err = client.GetLeverageInfo().MarginMode(blofin.MarginModeCross).Do(context.Background())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "instId required")
 
@@ -431,7 +431,7 @@ func TestGetBatchLeverageInfoService(t *testing.T) {
 
 		// Check request parameters
 		assert.Equal(t, "BTC-USDT,ETH-USDT", r.URL.Query().Get("instId"))
-		assert.Equal(t, MarginModeCross, r.URL.Query().Get("marginMode"))
+		assert.Equal(t, blofin.MarginModeCross, r.URL.Query().Get("marginMode"))
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -461,7 +461,7 @@ func TestGetBatchLeverageInfoService(t *testing.T) {
 	// Test successful request
 	leverage, err := client.NewGetBatchLeverageInfoService().
 		InstIds([]string{"BTC-USDT", "ETH-USDT"}).
-		MarginMode(MarginModeCross).
+		MarginMode(blofin.MarginModeCross).
 		Do(context.Background())
 	assert.NoError(t, err)
 	assert.NotNil(t, leverage)
@@ -472,18 +472,18 @@ func TestGetBatchLeverageInfoService(t *testing.T) {
 	// Check first instrument
 	assert.Equal(t, "BTC-USDT", leverage.Data[0].InstId)
 	assert.Equal(t, "50", leverage.Data[0].Leverage)
-	assert.Equal(t, MarginModeCross, leverage.Data[0].MarginMode)
-	assert.Equal(t, PositionSideNet, leverage.Data[0].PositionSide)
+	assert.Equal(t, blofin.MarginModeCross, leverage.Data[0].MarginMode)
+	assert.Equal(t, blofin.PositionSideNet, leverage.Data[0].PositionSide)
 
 	// Check second instrument
 	assert.Equal(t, "ETH-USDT", leverage.Data[1].InstId)
 	assert.Equal(t, "3", leverage.Data[1].Leverage)
-	assert.Equal(t, MarginModeCross, leverage.Data[1].MarginMode)
-	assert.Equal(t, PositionSideNet, leverage.Data[1].PositionSide)
+	assert.Equal(t, blofin.MarginModeCross, leverage.Data[1].MarginMode)
+	assert.Equal(t, blofin.PositionSideNet, leverage.Data[1].PositionSide)
 
 	// Test with empty list of instruments
 	_, err = client.NewGetBatchLeverageInfoService().
-		MarginMode(MarginModeCross).
+		MarginMode(blofin.MarginModeCross).
 		Do(context.Background())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "instIds required")
@@ -495,7 +495,7 @@ func TestGetBatchLeverageInfoService(t *testing.T) {
 	}
 	_, err = client.NewGetBatchLeverageInfoService().
 		InstIds(instIds).
-		MarginMode(MarginModeCross).
+		MarginMode(blofin.MarginModeCross).
 		Do(context.Background())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "too many instIds (max 20)")
@@ -527,8 +527,8 @@ func TestSetLeverageService(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "BTC-USDT", req.InstId)
 		assert.Equal(t, "100", req.Leverage)
-		assert.Equal(t, MarginModeCross, req.MarginMode)
-		assert.Equal(t, PositionSideLong, req.PositionSide)
+		assert.Equal(t, blofin.MarginModeCross, req.MarginMode)
+		assert.Equal(t, blofin.PositionSideLong, req.PositionSide)
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -551,8 +551,8 @@ func TestSetLeverageService(t *testing.T) {
 	leverage, err := client.NewSetLeverageService().
 		InstId("BTC-USDT").
 		Leverage("100").
-		MarginMode(MarginModeCross).
-		PositionSide(PositionSideLong).
+		MarginMode(blofin.MarginModeCross).
+		PositionSide(blofin.PositionSideLong).
 		Do(context.Background())
 	assert.NoError(t, err)
 	assert.NotNil(t, leverage)
@@ -560,13 +560,13 @@ func TestSetLeverageService(t *testing.T) {
 	assert.Equal(t, "success", leverage.Msg)
 	assert.Equal(t, "BTC-USDT", leverage.Data.InstId)
 	assert.Equal(t, "100", leverage.Data.Leverage)
-	assert.Equal(t, MarginModeCross, leverage.Data.MarginMode)
-	assert.Equal(t, PositionSideLong, leverage.Data.PositionSide)
+	assert.Equal(t, blofin.MarginModeCross, leverage.Data.MarginMode)
+	assert.Equal(t, blofin.PositionSideLong, leverage.Data.PositionSide)
 
 	// Test with empty instId
 	_, err = client.NewSetLeverageService().
 		Leverage("100").
-		MarginMode(MarginModeCross).
+		MarginMode(blofin.MarginModeCross).
 		Do(context.Background())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "instId required")
@@ -574,7 +574,7 @@ func TestSetLeverageService(t *testing.T) {
 	// Test with empty leverage
 	_, err = client.NewSetLeverageService().
 		InstId("BTC-USDT").
-		MarginMode(MarginModeCross).
+		MarginMode(blofin.MarginModeCross).
 		Do(context.Background())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "leverage required")
@@ -606,10 +606,10 @@ func TestPlaceOrderService(t *testing.T) {
 		err := json.NewDecoder(r.Body).Decode(&req)
 		assert.NoError(t, err)
 		assert.Equal(t, "BTC-USDT", req.InstID)
-		assert.Equal(t, MarginModeCross, req.MarginMode)
-		assert.Equal(t, PositionSideLong, req.PositionSide)
-		assert.Equal(t, OrderSideSell, req.Side)
-		assert.Equal(t, OrderTypeLimit, req.OrderType)
+		assert.Equal(t, blofin.MarginModeCross, req.MarginMode)
+		assert.Equal(t, blofin.PositionSideLong, req.PositionSide)
+		assert.Equal(t, blofin.OrderSideSell, req.Side)
+		assert.Equal(t, blofin.OrderTypeLimit, req.OrderType)
 		assert.Equal(t, "23212.2", req.Price)
 		assert.Equal(t, "2", req.Size)
 		assert.Equal(t, "test1597321", req.ClientOrderId)
@@ -636,10 +636,10 @@ func TestPlaceOrderService(t *testing.T) {
 	// Test successful request
 	order, err := client.NewPlaceOrderService().
 		InstId("BTC-USDT").
-		MarginMode(MarginModeCross).
-		PositionSide(PositionSideLong).
-		Side(OrderSideSell).
-		OrderType(OrderTypeLimit).
+		MarginMode(blofin.MarginModeCross).
+		PositionSide(blofin.PositionSideLong).
+		Side(blofin.OrderSideSell).
+		OrderType(blofin.OrderTypeLimit).
 		Price("23212.2").
 		Size("2").
 		ClientOrderId("test1597321").
@@ -656,10 +656,10 @@ func TestPlaceOrderService(t *testing.T) {
 
 	// Test with empty instId
 	_, err = client.NewPlaceOrderService().
-		MarginMode(MarginModeCross).
-		PositionSide(PositionSideLong).
-		Side(OrderSideSell).
-		OrderType(OrderTypeLimit).
+		MarginMode(blofin.MarginModeCross).
+		PositionSide(blofin.PositionSideLong).
+		Side(blofin.OrderSideSell).
+		OrderType(blofin.OrderTypeLimit).
 		Price("23212.2").
 		Size("2").
 		Do(context.Background())
@@ -669,9 +669,9 @@ func TestPlaceOrderService(t *testing.T) {
 	// Test with empty marginMode
 	_, err = client.NewPlaceOrderService().
 		InstId("BTC-USDT").
-		PositionSide(PositionSideLong).
-		Side(OrderSideSell).
-		OrderType(OrderTypeLimit).
+		PositionSide(blofin.PositionSideLong).
+		Side(blofin.OrderSideSell).
+		OrderType(blofin.OrderTypeLimit).
 		Price("23212.2").
 		Size("2").
 		Do(context.Background())
@@ -681,9 +681,9 @@ func TestPlaceOrderService(t *testing.T) {
 	// Test with empty positionSide
 	_, err = client.NewPlaceOrderService().
 		InstId("BTC-USDT").
-		MarginMode(MarginModeCross).
-		Side(OrderSideSell).
-		OrderType(OrderTypeLimit).
+		MarginMode(blofin.MarginModeCross).
+		Side(blofin.OrderSideSell).
+		OrderType(blofin.OrderTypeLimit).
 		Price("23212.2").
 		Size("2").
 		Do(context.Background())
@@ -693,9 +693,9 @@ func TestPlaceOrderService(t *testing.T) {
 	// Test with empty side
 	_, err = client.NewPlaceOrderService().
 		InstId("BTC-USDT").
-		MarginMode(MarginModeCross).
-		PositionSide(PositionSideLong).
-		OrderType(OrderTypeLimit).
+		MarginMode(blofin.MarginModeCross).
+		PositionSide(blofin.PositionSideLong).
+		OrderType(blofin.OrderTypeLimit).
 		Price("23212.2").
 		Size("2").
 		Do(context.Background())
@@ -705,9 +705,9 @@ func TestPlaceOrderService(t *testing.T) {
 	// Test with empty orderType
 	_, err = client.NewPlaceOrderService().
 		InstId("BTC-USDT").
-		MarginMode(MarginModeCross).
-		PositionSide(PositionSideLong).
-		Side(OrderSideSell).
+		MarginMode(blofin.MarginModeCross).
+		PositionSide(blofin.PositionSideLong).
+		Side(blofin.OrderSideSell).
 		Price("23212.2").
 		Size("2").
 		Do(context.Background())
@@ -717,10 +717,10 @@ func TestPlaceOrderService(t *testing.T) {
 	// Test with empty size
 	_, err = client.NewPlaceOrderService().
 		InstId("BTC-USDT").
-		MarginMode(MarginModeCross).
-		PositionSide(PositionSideLong).
-		Side(OrderSideSell).
-		OrderType(OrderTypeLimit).
+		MarginMode(blofin.MarginModeCross).
+		PositionSide(blofin.PositionSideLong).
+		Side(blofin.OrderSideSell).
+		OrderType(blofin.OrderTypeLimit).
 		Price("23212.2").
 		Do(context.Background())
 	assert.Error(t, err)
@@ -729,10 +729,10 @@ func TestPlaceOrderService(t *testing.T) {
 	// Test with empty price for limit order
 	_, err = client.NewPlaceOrderService().
 		InstId("BTC-USDT").
-		MarginMode(MarginModeCross).
-		PositionSide(PositionSideLong).
-		Side(OrderSideSell).
-		OrderType(OrderTypeLimit).
+		MarginMode(blofin.MarginModeCross).
+		PositionSide(blofin.PositionSideLong).
+		Side(blofin.OrderSideSell).
+		OrderType(blofin.OrderTypeLimit).
 		Size("2").
 		Do(context.Background())
 	assert.Error(t, err)
@@ -740,130 +740,53 @@ func TestPlaceOrderService(t *testing.T) {
 }
 
 func TestPlaceBatchOrdersService(t *testing.T) {
-	t.Run("successful batch orders placement", func(t *testing.T) {
-		// Mock server
-		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			assert.Equal(t, "/api/v1/trade/batch-orders", r.URL.Path)
-			assert.Equal(t, "POST", r.Method)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "POST", r.Method)
+		assert.Equal(t, "/api/v1/trade/batch-orders", r.URL.Path)
+		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
 
-			var orders []PlaceOrderRequest
-			err := json.NewDecoder(r.Body).Decode(&orders)
-			assert.NoError(t, err)
-			assert.Len(t, orders, 2)
-
-			response := BatchOrdersResponse{
-				BaseResponse: BaseResponse{
-					Code: "0",
-					Msg:  "success",
-				},
-				Data: []BatchOrderResult{
-					{OrderId: "1", ClientOrderId: "test1"},
-					{OrderId: "2", ClientOrderId: "test2"},
-				},
-			}
-			json.NewEncoder(w).Encode(response)
-		}))
-		defer server.Close()
-
-		// Create test client
-		client := &RestClient{
-			baseURL:    server.URL,
-			httpClient: resty.New().SetBaseURL(server.URL),
-		}
-
-		// Create test orders
-		orders := []PlaceOrderRequest{
-			{
-				InstID:        "BTC-USDT",
-				MarginMode:    "cross",
-				PositionSide:  "net",
-				Side:          "buy",
-				OrderType:     "limit",
-				Price:         "50000",
-				Size:          "1",
-				ClientOrderId: "test1",
-			},
-			{
-				InstID:        "BTC-USDT",
-				MarginMode:    "cross",
-				PositionSide:  "net",
-				Side:          "sell",
-				OrderType:     "limit",
-				Price:         "51000",
-				Size:          "1",
-				ClientOrderId: "test2",
-			},
-		}
-
-		// Test service
-		response, err := client.NewPlaceBatchOrdersService().Orders(orders).Do(context.Background())
+		var req []PlaceOrderRequest
+		err := json.NewDecoder(r.Body).Decode(&req)
 		assert.NoError(t, err)
-		assert.NotNil(t, response)
-		assert.Equal(t, "0", response.Code)
-		assert.Equal(t, "success", response.Msg)
-		assert.Len(t, response.Data, 2)
-		assert.Equal(t, "1", response.Data[0].OrderId)
-		assert.Equal(t, "test1", response.Data[0].ClientOrderId)
-	})
+		assert.Len(t, req, 2)
 
-	t.Run("empty orders list", func(t *testing.T) {
-		client := &RestClient{}
-		_, err := client.NewPlaceBatchOrdersService().Orders([]PlaceOrderRequest{}).Do(context.Background())
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "at least one order required")
-	})
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"code":"0","msg":"","data":[{"orderId":"123","clientOrderId":"456"}]}`))
+	}))
+	defer server.Close()
 
-	t.Run("too many orders", func(t *testing.T) {
-		client := &RestClient{}
-		orders := make([]PlaceOrderRequest, 21)
-		for i := range orders {
-			orders[i] = PlaceOrderRequest{InstID: "BTC-USDT"}
-		}
-		_, err := client.NewPlaceBatchOrdersService().Orders(orders).Do(context.Background())
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "too many orders (max 20)")
-	})
+	client := NewRestClient(server.URL)
+	client.SetAuth("test-key", "test-secret", "test-passphrase")
 
-	t.Run("different instId", func(t *testing.T) {
-		client := &RestClient{}
-		orders := []PlaceOrderRequest{
-			{InstID: "BTC-USDT"},
-			{InstID: "ETH-USDT"},
-		}
-		_, err := client.NewPlaceBatchOrdersService().Orders(orders).Do(context.Background())
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "all orders must have the same instId")
-	})
-
-	t.Run("missing required fields", func(t *testing.T) {
-		client := &RestClient{}
-		orders := []PlaceOrderRequest{
-			{
-				InstID: "BTC-USDT",
-				// Missing other required fields
-			},
-		}
-		_, err := client.NewPlaceBatchOrdersService().Orders(orders).Do(context.Background())
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "marginMode required")
-	})
-
-	t.Run("add order method", func(t *testing.T) {
-		service := &PlaceBatchOrdersService{}
-		order := PlaceOrderRequest{
+	// Create test orders
+	orders := []PlaceOrderRequest{
+		{
 			InstID:       "BTC-USDT",
 			MarginMode:   "cross",
-			PositionSide: "net",
+			PositionSide: "long",
 			Side:         "buy",
 			OrderType:    "limit",
 			Price:        "50000",
+			Size:         "0.1",
+		},
+		{
+			InstID:       "ETH-USDT",
+			MarginMode:   "cross",
+			PositionSide: "long",
+			Side:         "buy",
+			OrderType:    "limit",
+			Price:        "3000",
 			Size:         "1",
-		}
+		},
+	}
 
-		service.AddOrder(order)
-		assert.Len(t, service.orders, 1)
-		assert.Equal(t, order, service.orders[0])
-	})
+	resp, err := client.NewPlaceBatchOrdersService().Orders(orders).Do(nil)
+	assert.NoError(t, err)
+	assert.NotNil(t, resp)
+	assert.Equal(t, "0", resp.Code)
+	assert.Len(t, resp.Data, 1)
+	assert.Equal(t, "123", resp.Data[0].OrderId)
+	assert.Equal(t, "456", resp.Data[0].ClientOrderId)
 }
 
 func TestPlaceTPSLOrderService(t *testing.T) {
@@ -885,12 +808,12 @@ func TestPlaceTPSLOrderService(t *testing.T) {
 			err := json.NewDecoder(r.Body).Decode(&req)
 			assert.NoError(t, err)
 			assert.Equal(t, "ETH-USDT", req.InstID)
-			assert.Equal(t, MarginModeCross, req.MarginMode)
-			assert.Equal(t, PositionSideShort, req.PositionSide)
-			assert.Equal(t, OrderSideSell, req.Side)
+			assert.Equal(t, blofin.MarginModeCross, req.MarginMode)
+			assert.Equal(t, blofin.PositionSideShort, req.PositionSide)
+			assert.Equal(t, blofin.OrderSideSell, req.Side)
 			assert.Equal(t, "1661.1", req.TpTriggerPrice)
 			assert.Equal(t, "-1", req.TpOrderPrice)
-			assert.Equal(t, "1", req.Size)
+			assert.Equal(t, "2", req.Size)
 			assert.Equal(t, "true", req.ReduceOnly)
 			assert.Equal(t, "test123", req.ClientOrderId)
 
@@ -914,11 +837,11 @@ func TestPlaceTPSLOrderService(t *testing.T) {
 		// Test successful request
 		order, err := client.NewPlaceTPSLOrderService().
 			InstId("ETH-USDT").
-			MarginMode(MarginModeCross).
-			PositionSide(PositionSideShort).
-			Side(OrderSideSell).
+			MarginMode(blofin.MarginModeCross).
+			PositionSide(blofin.PositionSideShort).
+			Side(blofin.OrderSideSell).
 			TakeProfitParams("1661.1", "-1").
-			Size("1").
+			Size("2").
 			ReduceOnly("true").
 			ClientOrderId("test123").
 			Do(context.Background())
@@ -955,11 +878,11 @@ func TestPlaceTPSLOrderService(t *testing.T) {
 		// Test with error
 		order, err := client.NewPlaceTPSLOrderService().
 			InstId("ETH-USDT").
-			MarginMode(MarginModeCross).
-			PositionSide(PositionSideShort).
-			Side(OrderSideSell).
+			MarginMode(blofin.MarginModeCross).
+			PositionSide(blofin.PositionSideShort).
+			Side(blofin.OrderSideSell).
 			TakeProfitParams("invalid", "-1").
-			Size("1").
+			Size("2").
 			ClientOrderId("test123").
 			Do(context.Background())
 		assert.NoError(t, err) // API returns error in response body
@@ -977,11 +900,11 @@ func TestPlaceTPSLOrderService(t *testing.T) {
 
 		// Test with empty instId
 		_, err := client.NewPlaceTPSLOrderService().
-			MarginMode(MarginModeCross).
-			PositionSide(PositionSideShort).
-			Side(OrderSideSell).
+			MarginMode(blofin.MarginModeCross).
+			PositionSide(blofin.PositionSideShort).
+			Side(blofin.OrderSideSell).
 			TakeProfitParams("1661.1", "-1").
-			Size("1").
+			Size("2").
 			Do(context.Background())
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "instId required")
@@ -989,10 +912,10 @@ func TestPlaceTPSLOrderService(t *testing.T) {
 		// Test with empty marginMode
 		_, err = client.NewPlaceTPSLOrderService().
 			InstId("ETH-USDT").
-			PositionSide(PositionSideShort).
-			Side(OrderSideSell).
+			PositionSide(blofin.PositionSideShort).
+			Side(blofin.OrderSideSell).
 			TakeProfitParams("1661.1", "-1").
-			Size("1").
+			Size("2").
 			Do(context.Background())
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "marginMode required")
@@ -1000,10 +923,10 @@ func TestPlaceTPSLOrderService(t *testing.T) {
 		// Test with empty positionSide
 		_, err = client.NewPlaceTPSLOrderService().
 			InstId("ETH-USDT").
-			MarginMode(MarginModeCross).
-			Side(OrderSideSell).
+			MarginMode(blofin.MarginModeCross).
+			Side(blofin.OrderSideSell).
 			TakeProfitParams("1661.1", "-1").
-			Size("1").
+			Size("2").
 			Do(context.Background())
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "positionSide required")
@@ -1011,10 +934,10 @@ func TestPlaceTPSLOrderService(t *testing.T) {
 		// Test with empty side
 		_, err = client.NewPlaceTPSLOrderService().
 			InstId("ETH-USDT").
-			MarginMode(MarginModeCross).
-			PositionSide(PositionSideShort).
+			MarginMode(blofin.MarginModeCross).
+			PositionSide(blofin.PositionSideShort).
+			Side(blofin.OrderSideSell).
 			TakeProfitParams("1661.1", "-1").
-			Size("1").
 			Do(context.Background())
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "side required")
@@ -1022,9 +945,9 @@ func TestPlaceTPSLOrderService(t *testing.T) {
 		// Test with empty size
 		_, err = client.NewPlaceTPSLOrderService().
 			InstId("ETH-USDT").
-			MarginMode(MarginModeCross).
-			PositionSide(PositionSideShort).
-			Side(OrderSideSell).
+			MarginMode(blofin.MarginModeCross).
+			PositionSide(blofin.PositionSideShort).
+			Side(blofin.OrderSideSell).
 			TakeProfitParams("1661.1", "-1").
 			Do(context.Background())
 		assert.Error(t, err)
@@ -1033,10 +956,10 @@ func TestPlaceTPSLOrderService(t *testing.T) {
 		// Test without TP and SL
 		_, err = client.NewPlaceTPSLOrderService().
 			InstId("ETH-USDT").
-			MarginMode(MarginModeCross).
-			PositionSide(PositionSideShort).
-			Side(OrderSideSell).
-			Size("1").
+			MarginMode(blofin.MarginModeCross).
+			PositionSide(blofin.PositionSideShort).
+			Side(blofin.OrderSideSell).
+			Size("2").
 			Do(context.Background())
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "at least one of tpTriggerPrice or slTriggerPrice required")
@@ -1044,10 +967,10 @@ func TestPlaceTPSLOrderService(t *testing.T) {
 		// Test with TP trigger without TP order price
 		_, err = client.NewPlaceTPSLOrderService().
 			InstId("ETH-USDT").
-			MarginMode(MarginModeCross).
-			PositionSide(PositionSideShort).
-			Side(OrderSideSell).
-			Size("1").
+			MarginMode(blofin.MarginModeCross).
+			PositionSide(blofin.PositionSideShort).
+			Side(blofin.OrderSideSell).
+			Size("2").
 			TakeProfitParams("1661.1", "").
 			Do(context.Background())
 		assert.Error(t, err)
@@ -1074,9 +997,9 @@ func TestPlaceAlgoOrderService(t *testing.T) {
 			err := json.NewDecoder(r.Body).Decode(&req)
 			assert.NoError(t, err)
 			assert.Equal(t, "ETH-USDT", req.InstID)
-			assert.Equal(t, MarginModeCross, req.MarginMode)
-			assert.Equal(t, PositionSideShort, req.PositionSide)
-			assert.Equal(t, OrderSideSell, req.Side)
+			assert.Equal(t, blofin.MarginModeCross, req.MarginMode)
+			assert.Equal(t, blofin.PositionSideShort, req.PositionSide)
+			assert.Equal(t, blofin.OrderSideSell, req.Side)
 			assert.Equal(t, "1", req.Size)
 			assert.Equal(t, "-1", req.OrderPrice)
 			assert.Equal(t, "trigger", req.OrderType)
@@ -1125,9 +1048,9 @@ func TestPlaceAlgoOrderService(t *testing.T) {
 		// Test successful request
 		order, err := client.NewPlaceAlgoOrderService().
 			InstId("ETH-USDT").
-			MarginMode(MarginModeCross).
-			PositionSide(PositionSideShort).
-			Side(OrderSideSell).
+			MarginMode(blofin.MarginModeCross).
+			PositionSide(blofin.PositionSideShort).
+			Side(blofin.OrderSideSell).
 			Size("1").
 			OrderPrice("-1").
 			OrderType("trigger").
@@ -1151,9 +1074,9 @@ func TestPlaceAlgoOrderService(t *testing.T) {
 
 		// Test with empty instId
 		_, err := client.NewPlaceAlgoOrderService().
-			MarginMode(MarginModeCross).
-			PositionSide(PositionSideShort).
-			Side(OrderSideSell).
+			MarginMode(blofin.MarginModeCross).
+			PositionSide(blofin.PositionSideShort).
+			Side(blofin.OrderSideSell).
 			Size("1").
 			OrderType("trigger").
 			TriggerPrice("3000").
@@ -1164,8 +1087,8 @@ func TestPlaceAlgoOrderService(t *testing.T) {
 		// Test with empty marginMode
 		_, err = client.NewPlaceAlgoOrderService().
 			InstId("ETH-USDT").
-			PositionSide(PositionSideShort).
-			Side(OrderSideSell).
+			PositionSide(blofin.PositionSideShort).
+			Side(blofin.OrderSideSell).
 			Size("1").
 			OrderType("trigger").
 			TriggerPrice("3000").
@@ -1176,8 +1099,8 @@ func TestPlaceAlgoOrderService(t *testing.T) {
 		// Test with empty positionSide
 		_, err = client.NewPlaceAlgoOrderService().
 			InstId("ETH-USDT").
-			MarginMode(MarginModeCross).
-			Side(OrderSideSell).
+			MarginMode(blofin.MarginModeCross).
+			Side(blofin.OrderSideSell).
 			Size("1").
 			OrderType("trigger").
 			TriggerPrice("3000").
@@ -1188,8 +1111,8 @@ func TestPlaceAlgoOrderService(t *testing.T) {
 		// Test with empty side
 		_, err = client.NewPlaceAlgoOrderService().
 			InstId("ETH-USDT").
-			MarginMode(MarginModeCross).
-			PositionSide(PositionSideShort).
+			MarginMode(blofin.MarginModeCross).
+			PositionSide(blofin.PositionSideShort).
 			Size("1").
 			OrderType("trigger").
 			TriggerPrice("3000").
@@ -1200,9 +1123,9 @@ func TestPlaceAlgoOrderService(t *testing.T) {
 		// Test with empty size
 		_, err = client.NewPlaceAlgoOrderService().
 			InstId("ETH-USDT").
-			MarginMode(MarginModeCross).
-			PositionSide(PositionSideShort).
-			Side(OrderSideSell).
+			MarginMode(blofin.MarginModeCross).
+			PositionSide(blofin.PositionSideShort).
+			Side(blofin.OrderSideSell).
 			OrderType("trigger").
 			TriggerPrice("3000").
 			Do(context.Background())
@@ -1212,9 +1135,9 @@ func TestPlaceAlgoOrderService(t *testing.T) {
 		// Test with empty orderType
 		_, err = client.NewPlaceAlgoOrderService().
 			InstId("ETH-USDT").
-			MarginMode(MarginModeCross).
-			PositionSide(PositionSideShort).
-			Side(OrderSideSell).
+			MarginMode(blofin.MarginModeCross).
+			PositionSide(blofin.PositionSideShort).
+			Side(blofin.OrderSideSell).
 			Size("1").
 			TriggerPrice("3000").
 			Do(context.Background())
@@ -1224,9 +1147,9 @@ func TestPlaceAlgoOrderService(t *testing.T) {
 		// Test with empty triggerPrice
 		_, err = client.NewPlaceAlgoOrderService().
 			InstId("ETH-USDT").
-			MarginMode(MarginModeCross).
-			PositionSide(PositionSideShort).
-			Side(OrderSideSell).
+			MarginMode(blofin.MarginModeCross).
+			PositionSide(blofin.PositionSideShort).
+			Side(blofin.OrderSideSell).
 			Size("1").
 			OrderType("trigger").
 			Do(context.Background())

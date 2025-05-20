@@ -2,65 +2,130 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
-	"syscall"
 
+	"github.com/mmavka/go-blofin"
 	"github.com/mmavka/go-blofin/ws"
 )
 
 func main() {
-	// Create WebSocket client
-	wsClient := ws.NewDefaultClient()
+	// Run public API example
+	runPublicExample()
+
+	// Run private API example
+	runPrivateExample()
+}
+
+func runPublicExample() {
+
+	// Create new client
+	client := ws.NewDefaultClient()
 
 	// Set error handler
-	wsClient.SetErrorHandler(func(err error) {
-		log.Printf("WebSocket error: %v", err)
+	client.SetErrorHandler(func(err error) {
+		fmt.Printf("WebSocket error: %v\n", err)
 	})
 
-	// Connect to WebSocket server
-	if err := wsClient.Connect(); err != nil {
-		log.Fatalf("Failed to connect: %v", err)
+	// Connect to WebSocket
+	if err := client.Connect(); err != nil {
+		fmt.Printf("Failed to connect: %v\n", err)
+		return
 	}
-	defer wsClient.Close()
 
-	// Subscribe to trades channel
-	err := wsClient.Subscribe([]ws.ChannelArgs{
-		{Channel: "trades", InstId: "BTC-USDT"},
+	// Subscribe to book ticker
+	err := client.Subscribe([]ws.ChannelArgs{
+		{
+			Channel: blofin.ChannelCandle + "1m",
+			InstId:  "BTC-USDT",
+		},
+		{
+			Channel: blofin.ChannelCandle + "1m",
+			InstId:  "ETH-USDT",
+		},
 	})
 	if err != nil {
-		log.Fatalf("Failed to subscribe: %v", err)
+		fmt.Printf("Failed to subscribe: %v\n", err)
+		return
 	}
 
-	// Subscribe to order book channel
-	err = wsClient.Subscribe([]ws.ChannelArgs{
-		{Channel: "books", InstId: "BTC-USDT"},
-	})
-	if err != nil {
-		log.Fatalf("Failed to subscribe: %v", err)
-	}
-
-	// Handle trades
+	// Handle messages
 	go func() {
-		for trade := range wsClient.Trades() {
-			for _, t := range trade.Data {
-				fmt.Printf("Trade: Price=%s, Size=%s, Side=%s\n",
-					t.Price, t.Size, t.Side)
-			}
-		}
-	}()
-
-	// Handle order book updates
-	go func() {
-		for book := range wsClient.OrderBooks() {
-			fmt.Printf("Order book update: Bids=%v, Asks=%v\n",
-				book.Data.Bids, book.Data.Asks)
+		for msg := range client.Candles() {
+			fmt.Printf("Received message: %s\n", msg)
 		}
 	}()
 
 	// Wait for interrupt signal
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-	<-sigChan
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt)
+	<-quit
+
+	// Close connection
+	client.Close()
+	fmt.Println("Connection closed")
+}
+
+func runPrivateExample() {
+	// Use testnet
+	ws.UseTestnet = true
+
+	// Create new client
+	client := ws.NewClient(blofin.TestnetWSPrivate)
+
+	// Set error handler
+	client.SetErrorHandler(func(err error) {
+		fmt.Printf("WebSocket error: %v\n", err)
+	})
+
+	// Connect to WebSocket
+	if err := client.Connect(); err != nil {
+		fmt.Printf("Failed to connect: %v\n", err)
+		return
+	}
+
+	// Login
+	if err := client.Login(
+		"your-api-key",
+		"your-api-secret",
+		"your-passphrase",
+	); err != nil {
+		fmt.Printf("Failed to login: %v\n", err)
+		return
+	}
+
+	// Subscribe to private channels
+	err := client.Subscribe([]ws.ChannelArgs{
+		{
+			Channel: blofin.ChannelOrders,
+			InstId:  "BTC-USDT",
+		},
+		{
+			Channel: blofin.ChannelPositions,
+			InstId:  "BTC-USDT",
+		},
+		{
+			Channel: blofin.ChannelAccount,
+		},
+	})
+	if err != nil {
+		fmt.Printf("Failed to subscribe: %v\n", err)
+		return
+	}
+
+	// Handle messages
+	go func() {
+		for msg := range client.Messages() {
+			fmt.Printf("Received message: %s\n", string(msg))
+		}
+	}()
+
+	// Wait for interrupt signal
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt)
+	<-quit
+
+	// Close connection
+	client.Close()
+	fmt.Println("Connection closed")
 }

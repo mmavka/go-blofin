@@ -13,6 +13,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/mmavka/go-blofin"
 )
 
 // --- GetBalance Service ---
@@ -812,7 +814,7 @@ func (s *PlaceOrderService) Do(ctx context.Context) (*PlaceOrderResponse, error)
 	if s.order.Size == "" {
 		return nil, fmt.Errorf("size required")
 	}
-	if s.order.OrderType != OrderTypeMarket && s.order.Price == "" {
+	if s.order.OrderType != blofin.OrderTypeMarket && s.order.Price == "" {
 		return nil, fmt.Errorf("price required for non-market orders")
 	}
 
@@ -896,7 +898,7 @@ func (s *PlaceBatchOrdersService) Do(ctx context.Context) (*BatchOrdersResponse,
 		if order.Size == "" {
 			return nil, fmt.Errorf("order %d: size required", i)
 		}
-		if order.OrderType != OrderTypeMarket && order.Price == "" {
+		if order.OrderType != blofin.OrderTypeMarket && order.Price == "" {
 			return nil, fmt.Errorf("order %d: price required for non-market orders", i)
 		}
 	}

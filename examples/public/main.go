@@ -4,61 +4,87 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/mmavka/go-blofin/rest"
 )
 
 func main() {
-	// Create client with default URL
+	ctx := context.Background()
+
+	// Create new client
 	client := rest.NewDefaultRestClient()
 
-	// Get all instruments
-	instruments, err := client.NewGetInstrumentsService().Do(context.Background())
+	// Get instruments
+	instruments, err := client.NewGetInstrumentsService().Do(ctx)
 	if err != nil {
 		log.Fatalf("Failed to get instruments: %v", err)
 	}
-	fmt.Printf("Found %d instruments\n", len(instruments.Data))
 
-	// Get order book for BTC-USDT
+	// Print instruments
+	for _, instrument := range instruments.Data {
+		fmt.Printf("Instrument: %+v\n", instrument)
+	}
+
+	// Get tickers
+	tickers, err := client.NewGetTickersService().Do(ctx)
+	if err != nil {
+		log.Fatalf("Failed to get tickers: %v", err)
+	}
+
+	// Print tickers
+	for _, ticker := range tickers.Data {
+		fmt.Printf("Ticker: %+v\n", ticker)
+	}
+
+	// Get order book
 	orderBook, err := client.NewGetOrderBookService().
 		InstId("BTC-USDT").
-		Size(10).
-		Do(context.Background())
+		Size(5).
+		Do(ctx)
 	if err != nil {
 		log.Fatalf("Failed to get order book: %v", err)
 	}
-	fmt.Printf("Order book for BTC-USDT:\n")
-	if len(orderBook.Data) > 0 {
-		fmt.Printf("Bids: %v\n", orderBook.Data[0].Bids)
-		fmt.Printf("Asks: %v\n", orderBook.Data[0].Asks)
-	}
 
-	// Get recent trades
+	// Print order book
+	fmt.Printf("Order Book: %+v\n", orderBook)
+
+	// Get trades
 	trades, err := client.NewGetTradesService().
 		InstId("BTC-USDT").
 		Limit(5).
-		Do(context.Background())
+		Do(ctx)
 	if err != nil {
 		log.Fatalf("Failed to get trades: %v", err)
 	}
-	fmt.Printf("Recent trades:\n")
+
+	// Print trades
 	for _, trade := range trades.Data {
-		fmt.Printf("Price: %s, Size: %s, Side: %s\n", trade.Price, trade.Size, trade.Side)
+		fmt.Printf("Trade: %+v\n", trade)
 	}
+
+	// Get mark price
+	markPrice, err := client.NewGetMarkPriceService().
+		InstId("BTC-USDT").
+		Do(ctx)
+	if err != nil {
+		log.Fatalf("Failed to get mark price: %v", err)
+	}
+
+	// Print mark price
+	fmt.Printf("Mark Price: %+v\n", markPrice)
 
 	// Get candles
 	candles, err := client.NewGetCandlesService().
 		InstId("BTC-USDT").
 		Bar("1m").
-		After(fmt.Sprintf("%d", time.Now().Add(-1*time.Hour).UnixMilli())).
-		Do(context.Background())
+		Limit(5).
+		Do(ctx)
 	if err != nil {
 		log.Fatalf("Failed to get candles: %v", err)
 	}
-	fmt.Printf("Candles for last hour:\n")
+
+	// Print candles
 	for _, candle := range candles.Data {
-		fmt.Printf("Time: %s, Open: %s, High: %s, Low: %s, Close: %s\n",
-			candle.Ts, candle.Open, candle.High, candle.Low, candle.Close)
+		fmt.Printf("Candle: %+v\n", candle)
 	}
 }

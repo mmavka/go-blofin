@@ -6,12 +6,16 @@ import (
 	"log"
 	"os"
 
+	"github.com/mmavka/go-blofin"
 	"github.com/mmavka/go-blofin/rest"
 )
 
 func main() {
-	// Create client with default URL
+	// Create a new REST client
 	client := rest.NewDefaultRestClient()
+
+	// Use testnet
+	blofin.UseTestnet = true
 
 	// Set authentication credentials
 	client.SetAuth(
