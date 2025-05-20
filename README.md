@@ -19,7 +19,6 @@ Go library for working with BloFin cryptocurrency exchange
 - `ws/` — WebSocket client, models, signatures
 - `auth/` — signature generation
 - `utils/` — base errors
-- `docs/` — documentation (architecture, changelog, tasks, Q&A)
 
 ## Quick Start
 ```go
