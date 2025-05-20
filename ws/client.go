@@ -9,6 +9,7 @@ package ws
 
 import (
 	"fmt"
+	"math/rand"
 	"net/url"
 	"sync"
 	"time"
@@ -19,13 +20,13 @@ import (
 )
 
 const (
-	// Ping/pong interval (20 seconds < 30 seconds limit)
-	pingInterval = 20 * time.Second
-	pongTimeout  = 10 * time.Second
+	// Ping/pong interval (15 seconds < 30 seconds limit)
+	pingInterval = 15 * time.Second
+	pongTimeout  = 5 * time.Second
 
 	// New connection limit
-	reconnectDelay = 2 * time.Second
-	maxRetries     = 5
+	reconnectDelay = 1 * time.Second
+	maxRetries     = 10
 )
 
 var privateChannels = map[string]struct{}{
@@ -213,9 +214,10 @@ func (c *Client) reconnect() {
 			return
 		}
 
-		// Exponential backoff
-		delay := reconnectDelay * time.Duration(retries)
-		time.Sleep(delay)
+		// Exponential backoff with jitter
+		delay := reconnectDelay * time.Duration(1<<uint(retries))
+		jitter := time.Duration(rand.Int63n(int64(delay / 4)))
+		time.Sleep(delay + jitter)
 	}
 }
 
@@ -241,6 +243,7 @@ func (c *Client) readLoop() {
 			if c.errorHandler != nil {
 				c.errorHandler(fmt.Errorf("panic in readLoop: %v", r))
 			}
+			c.reconnect()
 		}
 	}()
 
@@ -254,6 +257,7 @@ func (c *Client) readLoop() {
 			case c.errors <- err:
 			default:
 			}
+			c.reconnect()
 			return
 		}
 
@@ -273,6 +277,15 @@ func (c *Client) readLoop() {
 			Event string `json:"event"`
 		}
 		if err := json.Unmarshal(msg, &base); err != nil {
+			continue
+		}
+
+		// Handle ping/pong messages
+		if base.Op == "pong" {
+			c.mu.Lock()
+			c.lastPongTime = time.Now()
+			c.pongTimer.Reset(pongTimeout)
+			c.mu.Unlock()
 			continue
 		}
 
