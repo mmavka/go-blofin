@@ -15,6 +15,7 @@ import (
 
 	json "github.com/goccy/go-json"
 	"github.com/gorilla/websocket"
+	"github.com/mmavka/go-blofin/rest"
 )
 
 const (
@@ -84,7 +85,7 @@ func NewClient(url string) *Client {
 }
 
 func NewDefaultClient() *Client {
-	return NewClient("wss://ws.blofin.com/ws")
+	return NewClient(rest.DefaultWSPublic)
 }
 
 func (c *Client) Connect() error {

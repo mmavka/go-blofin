@@ -57,7 +57,7 @@ func (c *RestClient) addAuthHeaders(req *resty.Request, method, path, body strin
 }
 
 func NewDefaultRestClient() *RestClient {
-	return NewRestClient("https://api.blofin.com")
+	return NewRestClient(DefaultBaseURL)
 }
 
 func (c *RestClient) SetBaseURL(url string) {
