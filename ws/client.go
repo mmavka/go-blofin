@@ -20,13 +20,13 @@ import (
 )
 
 const (
-	// Ping/pong interval (15 seconds < 30 seconds limit)
-	pingInterval = 15 * time.Second
-	pongTimeout  = 5 * time.Second
+	// Ping/pong interval (10 seconds < 30 seconds limit)
+	pingInterval = 10 * time.Second
+	pongTimeout  = 3 * time.Second
 
 	// New connection limit
-	reconnectDelay = 1 * time.Second
-	maxRetries     = 10
+	reconnectDelay = 500 * time.Millisecond
+	maxRetries     = 20
 )
 
 var privateChannels = map[string]struct{}{
@@ -109,15 +109,20 @@ func (c *Client) Connect() error {
 	}
 
 	dialer := websocket.Dialer{
-		HandshakeTimeout: 10 * time.Second,
+		HandshakeTimeout: 5 * time.Second,
 		ReadBufferSize:   32768,
 		WriteBufferSize:  32768,
+		// Enable compression
+		EnableCompression: true,
 	}
 
 	conn, _, err := dialer.Dial(u.String(), nil)
 	if err != nil {
 		return err
 	}
+
+	// Set read deadline
+	conn.SetReadDeadline(time.Now().Add(pongTimeout * 2))
 
 	c.conn = conn
 
@@ -152,6 +157,7 @@ func (c *Client) setupPingPong() {
 		c.mu.Lock()
 		c.lastPongTime = time.Now()
 		c.pongTimer.Reset(pongTimeout)
+		c.conn.SetReadDeadline(time.Now().Add(pongTimeout * 2))
 		c.mu.Unlock()
 		return nil
 	})
@@ -261,6 +267,9 @@ func (c *Client) readLoop() {
 			return
 		}
 
+		// Reset read deadline after successful read
+		c.conn.SetReadDeadline(time.Now().Add(pongTimeout * 2))
+
 		select {
 		case c.messages <- msg:
 		default:
@@ -285,6 +294,7 @@ func (c *Client) readLoop() {
 			c.mu.Lock()
 			c.lastPongTime = time.Now()
 			c.pongTimer.Reset(pongTimeout)
+			c.conn.SetReadDeadline(time.Now().Add(pongTimeout * 2))
 			c.mu.Unlock()
 			continue
 		}
