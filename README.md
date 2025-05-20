@@ -84,5 +84,8 @@ wsClient.SetURL("wss://sandbox-ws.blofin.com/ws")
 - [goccy/go-json](https://github.com/goccy/go-json)
 - [gorilla/websocket](https://github.com/gorilla/websocket)
 
+## Disclaimer
+This library is not affiliated with, endorsed by, or sponsored by BloFin. Use at your own risk. The authors and contributors are not responsible for any financial losses or damages that may occur from using this library. Always verify the accuracy of the data and test thoroughly before using in production.
+
 ## License
 MIT 
