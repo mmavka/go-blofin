@@ -14,7 +14,7 @@ import (
 	"encoding/hex"
 )
 
-// SignWebSocketLogin генерирует подпись для WebSocket login
+// SignWebSocketLogin generates signature for WebSocket login
 func SignWebSocketLogin(secret, timestamp, nonce string) string {
 	path := "/users/self/verify"
 	method := "GET"

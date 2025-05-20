@@ -14,7 +14,7 @@ import (
 	"encoding/hex"
 )
 
-// SignRequest генерирует подпись для BloFin
+// SignRequest generates signature for BloFin
 func SignRequest(secret, method, path, timestamp, nonce, body string) string {
 	prehash := path + method + timestamp + nonce + body
 	h := hmac.New(sha256.New, []byte(secret))

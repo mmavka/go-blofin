@@ -13,8 +13,8 @@ import (
 	"github.com/goccy/go-json"
 )
 
-// Instrument публичная информация об инструменте
-// Пример: https://docs.blofin.com/index.html#get-instruments
+// Instrument public information about the instrument
+// Example: https://docs.blofin.com/index.html#get-instruments
 
 type Instrument struct {
 	InstID        string `json:"instId"`
@@ -34,20 +34,22 @@ type Instrument struct {
 	State         string `json:"state"`
 }
 
-// BaseResponse базовая структура ответа API
+// BaseResponse base API response structure
+
 type BaseResponse struct {
 	Code string `json:"code"`
 	Msg  string `json:"msg"`
 }
 
-// InstrumentsResponse представляет ответ на запрос инструментов
+// InstrumentsResponse represents response to instruments request
+
 type InstrumentsResponse struct {
 	BaseResponse
 	Data []Instrument `json:"data"`
 }
 
-// Ticker публичная информация о тикере
-// Пример: https://docs.blofin.com/index.html#get-tickers
+// Ticker public information about the ticker
+// Example: https://docs.blofin.com/index.html#get-tickers
 
 type Ticker struct {
 	InstID         string `json:"instId"`
@@ -65,14 +67,15 @@ type Ticker struct {
 	Ts             string `json:"ts"`
 }
 
-// TickersResponse представляет ответ на запрос тикеров
+// TickersResponse represents response to tickers request
+
 type TickersResponse struct {
 	BaseResponse
 	Data []Ticker `json:"data"`
 }
 
-// OrderBook публичная информация о стакане
-// Пример: https://docs.blofin.com/index.html#get-order-book
+// OrderBook public information about the order book
+// Example: https://docs.blofin.com/index.html#get-order-book
 
 type OrderBook struct {
 	Asks [][]string `json:"asks"`
@@ -80,14 +83,15 @@ type OrderBook struct {
 	Ts   string     `json:"ts"`
 }
 
-// OrderBookResponse представляет ответ на запрос стакана
+// OrderBookResponse represents response to order book request
+
 type OrderBookResponse struct {
 	BaseResponse
 	Data []OrderBook `json:"data"`
 }
 
-// Balance информация о балансе
-// Пример: https://docs.blofin.com/index.html#get-balance
+// Balance information about the balance
+// Example: https://docs.blofin.com/index.html#get-balance
 
 type Balance struct {
 	Currency  string `json:"currency"`
@@ -97,14 +101,15 @@ type Balance struct {
 	Bonus     string `json:"bonus"`
 }
 
-// GetBalanceResponse представляет ответ на запрос баланса
+// GetBalanceResponse represents response to balance request
+
 type GetBalanceResponse struct {
 	BaseResponse
 	Data []Balance `json:"data"`
 }
 
-// Trade публичная информация о сделке
-// Пример: https://docs.blofin.com/index.html#get-trades
+// Trade public information about the trade
+// Example: https://docs.blofin.com/index.html#get-trades
 
 type Trade struct {
 	TradeID string `json:"tradeId"`
@@ -115,14 +120,15 @@ type Trade struct {
 	Ts      string `json:"ts"`
 }
 
-// TradesResponse представляет ответ на запрос сделок
+// TradesResponse represents response to trades request
+
 type TradesResponse struct {
 	BaseResponse
 	Data []Trade `json:"data"`
 }
 
-// MarkPrice информация о mark/index price
-// Пример: https://docs.blofin.com/index.html#get-mark-price
+// MarkPrice information about mark/index price
+// Example: https://docs.blofin.com/index.html#get-mark-price
 
 type MarkPrice struct {
 	InstID     string `json:"instId"`
@@ -131,14 +137,15 @@ type MarkPrice struct {
 	Ts         string `json:"ts"`
 }
 
-// MarkPriceResponse представляет ответ на запрос mark price
+// MarkPriceResponse represents response to mark price request
+
 type MarkPriceResponse struct {
 	BaseResponse
 	Data []MarkPrice `json:"data"`
 }
 
-// FundingRate информация о ставке финансирования
-// Пример: https://docs.blofin.com/index.html#get-funding-rate
+// FundingRate information about funding rate
+// Example: https://docs.blofin.com/index.html#get-funding-rate
 
 type FundingRate struct {
 	InstID      string `json:"instId"`
@@ -146,14 +153,15 @@ type FundingRate struct {
 	FundingTime string `json:"fundingTime"`
 }
 
-// FundingRateResponse представляет ответ на запрос funding rate
+// FundingRateResponse represents response to funding rate request
+
 type FundingRateResponse struct {
 	BaseResponse
 	Data []FundingRate `json:"data"`
 }
 
-// Candle информация о свече (каждая свеча — массив строк)
-// Пример: https://docs.blofin.com/index.html#get-candlesticks
+// Candle information about the candle (each candle is an array of strings)
+// Example: https://docs.blofin.com/index.html#get-candlesticks
 
 type Candle struct {
 	Ts               string `json:"ts"`
@@ -167,7 +175,8 @@ type Candle struct {
 	Confirm          string `json:"confirm"`
 }
 
-// UnmarshalJSON реализует парсинг массива строк в структуру Candle
+// UnmarshalJSON implements parsing of string array into Candle structure
+
 func (c *Candle) UnmarshalJSON(data []byte) error {
 	var arr []string
 	if err := json.Unmarshal(data, &arr); err != nil {
@@ -188,13 +197,14 @@ func (c *Candle) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// CandlesResponse представляет ответ на запрос свечей
+// CandlesResponse represents response to candles request
+
 type CandlesResponse struct {
 	BaseResponse
 	Data []Candle `json:"data"`
 }
 
-// TransferRequest — запрос на трансфер средств
+// TransferRequest — request for funds transfer
 
 type TransferRequest struct {
 	Currency    string `json:"currency"`
@@ -204,7 +214,8 @@ type TransferRequest struct {
 	ClientId    string `json:"clientId,omitempty"`
 }
 
-// TransferResponse представляет ответ на запрос трансфера
+// TransferResponse represents response to transfer request
+
 type TransferResponse struct {
 	BaseResponse
 	Data struct {
@@ -213,7 +224,7 @@ type TransferResponse struct {
 	} `json:"data"`
 }
 
-// TransferHistoryItem — элемент истории трансферов
+// TransferHistoryItem — transfer history item
 
 type TransferHistoryItem struct {
 	TransferId  string `json:"transferId"`
@@ -225,13 +236,14 @@ type TransferHistoryItem struct {
 	ClientId    string `json:"clientId"`
 }
 
-// TransferHistoryResponse представляет ответ на запрос истории трансферов
+// TransferHistoryResponse represents response to transfer history request
+
 type TransferHistoryResponse struct {
 	BaseResponse
 	Data []TransferHistoryItem `json:"data"`
 }
 
-// WithdrawHistoryItem — элемент истории выводов средств
+// WithdrawHistoryItem — withdrawal history item
 
 type WithdrawHistoryItem struct {
 	Currency    string  `json:"currency"`
@@ -250,13 +262,14 @@ type WithdrawHistoryItem struct {
 	WithdrawId  string  `json:"withdrawId"`
 }
 
-// WithdrawHistoryResponse представляет ответ на запрос истории выводов
+// WithdrawHistoryResponse represents response to withdrawal history request
+
 type WithdrawHistoryResponse struct {
 	BaseResponse
 	Data []WithdrawHistoryItem `json:"data"`
 }
 
-// DepositHistoryItem — элемент истории депозитов
+// DepositHistoryItem — deposit history item
 
 type DepositHistoryItem struct {
 	Currency  string `json:"currency"`
@@ -271,13 +284,15 @@ type DepositHistoryItem struct {
 	DepositId string `json:"depositId"`
 }
 
-// DepositHistoryResponse представляет ответ на запрос истории депозитов
+// DepositHistoryResponse represents response to deposit history request
+
 type DepositHistoryResponse struct {
 	BaseResponse
 	Data []DepositHistoryItem `json:"data"`
 }
 
-// AccountBalanceResponse представляет ответ на запрос баланса фьючерсного аккаунта
+// AccountBalanceResponse represents response to futures account balance request
+
 type AccountBalanceResponse struct {
 	BaseResponse
 	Data struct {
@@ -288,7 +303,8 @@ type AccountBalanceResponse struct {
 	} `json:"data"`
 }
 
-// AccountBalanceDetail представляет детальную информацию о балансе по валюте
+// AccountBalanceDetail represents detailed balance information by currency
+
 type AccountBalanceDetail struct {
 	Currency              string `json:"currency"`
 	Equity                string `json:"equity"`
@@ -304,13 +320,14 @@ type AccountBalanceDetail struct {
 	Bonus                 string `json:"bonus"`
 }
 
-// Position представляет информацию о позиции
+// Position represents position information
+
 type Position struct {
 	PositionId         string `json:"positionId"`
 	InstId             string `json:"instId"`
 	InstType           string `json:"instType"`
-	MarginMode         string `json:"marginMode"`   // MarginModeCross или MarginModeIsolated
-	PositionSide       string `json:"positionSide"` // PositionSideLong, PositionSideShort или PositionSideNet
+	MarginMode         string `json:"marginMode"`   // MarginModeCross or MarginModeIsolated
+	PositionSide       string `json:"positionSide"` // PositionSideLong, PositionSideShort or PositionSideNet
 	Adl                string `json:"adl"`
 	Positions          string `json:"positions"`
 	AvailablePositions string `json:"availablePositions"`
@@ -328,13 +345,15 @@ type Position struct {
 	Leverage           string `json:"leverage"`
 }
 
-// GetPositionsResponse представляет ответ на запрос позиций
+// GetPositionsResponse represents response to positions request
+
 type GetPositionsResponse struct {
 	BaseResponse
 	Data []Position `json:"data"`
 }
 
-// GetMarginModeResponse представляет ответ на запрос режима маржи
+// GetMarginModeResponse represents response to margin mode request
+
 type GetMarginModeResponse struct {
 	BaseResponse
 	Data struct {
@@ -342,12 +361,14 @@ type GetMarginModeResponse struct {
 	} `json:"data"`
 }
 
-// SetMarginModeRequest представляет запрос на установку режима маржи
+// SetMarginModeRequest represents request to set margin mode
+
 type SetMarginModeRequest struct {
-	MarginMode string `json:"marginMode"` // MarginModeCross или MarginModeIsolated
+	MarginMode string `json:"marginMode"` // MarginModeCross or MarginModeIsolated
 }
 
-// GetPositionModeResponse представляет ответ на запрос режима позиций
+// GetPositionModeResponse represents response to position mode request
+
 type GetPositionModeResponse struct {
 	BaseResponse
 	Data struct {
@@ -355,12 +376,14 @@ type GetPositionModeResponse struct {
 	} `json:"data"`
 }
 
-// SetPositionModeRequest представляет запрос на установку режима позиций
+// SetPositionModeRequest represents request to set position mode
+
 type SetPositionModeRequest struct {
-	PositionMode string `json:"positionMode"` // PositionModeNet или PositionModeLongShort
+	PositionMode string `json:"positionMode"` // PositionModeNet or PositionModeLongShort
 }
 
-// GetLeverageInfoResponse представляет ответ на запрос информации о плече (deprecated)
+// GetLeverageInfoResponse represents response to leverage information request (deprecated)
+
 type GetLeverageInfoResponse struct {
 	BaseResponse
 	Data struct {
@@ -370,50 +393,55 @@ type GetLeverageInfoResponse struct {
 	} `json:"data"`
 }
 
-// BatchLeverageInfo представляет информацию о плече для инструмента
+// BatchLeverageInfo represents leverage information for the instrument
+
 type BatchLeverageInfo struct {
 	InstId       string `json:"instId"`
 	Leverage     string `json:"leverage"`
-	MarginMode   string `json:"marginMode"`   // MarginModeCross или MarginModeIsolated
-	PositionSide string `json:"positionSide"` // PositionSideLong, PositionSideShort или PositionSideNet
+	MarginMode   string `json:"marginMode"`   // MarginModeCross or MarginModeIsolated
+	PositionSide string `json:"positionSide"` // PositionSideLong, PositionSideShort or PositionSideNet
 }
 
-// GetBatchLeverageInfoResponse представляет ответ на запрос информации о плече для нескольких инструментов
+// GetBatchLeverageInfoResponse represents response to leverage information request for multiple instruments
+
 type GetBatchLeverageInfoResponse struct {
 	BaseResponse
 	Data []BatchLeverageInfo `json:"data"`
 }
 
-// SetLeverageRequest представляет запрос на установку плеча
+// SetLeverageRequest represents request to set leverage
+
 type SetLeverageRequest struct {
 	InstId       string `json:"instId"`                 // Instrument ID
 	Leverage     string `json:"leverage"`               // Leverage value
-	MarginMode   string `json:"marginMode"`             // MarginModeCross или MarginModeIsolated
-	PositionSide string `json:"positionSide,omitempty"` // PositionSideLong или PositionSideShort (только для isolated в long/short mode)
+	MarginMode   string `json:"marginMode"`             // MarginModeCross or MarginModeIsolated
+	PositionSide string `json:"positionSide,omitempty"` // PositionSideLong or PositionSideShort (only for isolated in long/short mode)
 }
 
-// SetLeverageResponse представляет ответ на запрос установки плеча
+// SetLeverageResponse represents response to set leverage request
+
 type SetLeverageResponse struct {
 	BaseResponse
 	Data struct {
 		InstId       string `json:"instId"`       // Instrument ID
 		Leverage     string `json:"leverage"`     // Leverage value
-		MarginMode   string `json:"marginMode"`   // MarginModeCross или MarginModeIsolated
-		PositionSide string `json:"positionSide"` // PositionSideLong, PositionSideShort или PositionSideNet
+		MarginMode   string `json:"marginMode"`   // MarginModeCross or MarginModeIsolated
+		PositionSide string `json:"positionSide"` // PositionSideLong, PositionSideShort or PositionSideNet
 	} `json:"data"`
 }
 
-// PlaceOrderRequest запрос на размещение ордера
+// PlaceOrderRequest request to place an order
+
 type PlaceOrderRequest struct {
 	InstID         string `json:"instId"`                   // Instrument ID
-	MarginMode     string `json:"marginMode"`               // MarginModeCross или MarginModeIsolated
-	PositionSide   string `json:"positionSide"`             // PositionSideLong, PositionSideShort или PositionSideNet
-	Side           string `json:"side"`                     // OrderSideBuy или OrderSideSell
-	OrderType      string `json:"orderType"`                // Тип ордера (market, limit, post_only, fok, ioc)
-	Price          string `json:"price"`                    // Цена ордера
-	Size           string `json:"size"`                     // Количество контрактов
-	ReduceOnly     string `json:"reduceOnly,omitempty"`     // true или false
-	ClientOrderId  string `json:"clientOrderId,omitempty"`  // ID ордера клиента
+	MarginMode     string `json:"marginMode"`               // MarginModeCross or MarginModeIsolated
+	PositionSide   string `json:"positionSide"`             // PositionSideLong, PositionSideShort or PositionSideNet
+	Side           string `json:"side"`                     // OrderSideBuy or OrderSideSell
+	OrderType      string `json:"orderType"`                // Order type (market, limit, post_only, fok, ioc)
+	Price          string `json:"price"`                    // Order price
+	Size           string `json:"size"`                     // Number of contracts
+	ReduceOnly     string `json:"reduceOnly,omitempty"`     // true or false
+	ClientOrderId  string `json:"clientOrderId,omitempty"`  // Client order ID
 	TpTriggerPrice string `json:"tpTriggerPrice,omitempty"` // Take-profit trigger price
 	TpOrderPrice   string `json:"tpOrderPrice,omitempty"`   // Take-profit order price
 	SlTriggerPrice string `json:"slTriggerPrice,omitempty"` // Stop-loss trigger price
@@ -421,49 +449,55 @@ type PlaceOrderRequest struct {
 	BrokerId       string `json:"brokerId,omitempty"`       // Broker ID
 }
 
-// OrderResult результат выполнения ордера
+// OrderResult order execution result
+
 type OrderResult struct {
 	OrderId       string `json:"orderId"`       // Order ID
 	ClientOrderId string `json:"clientOrderId"` // Client Order ID
-	Code          string `json:"code"`          // Код результата
-	Msg           string `json:"msg"`           // Сообщение
+	Code          string `json:"code"`          // Result code
+	Msg           string `json:"msg"`           // Message
 }
 
-// PlaceOrderResponse представляет ответ на запрос размещения ордера
+// PlaceOrderResponse represents response to place order request
+
 type PlaceOrderResponse struct {
 	BaseResponse
 	Data []OrderResult `json:"data"`
 }
 
-// BatchOrderResult результат выполнения ордера в пакетном запросе
+// BatchOrderResult order execution result in batch request
+
 type BatchOrderResult struct {
 	OrderId       string `json:"orderId"`       // Order ID
 	ClientOrderId string `json:"clientOrderId"` // Client Order ID
 }
 
-// BatchOrdersResponse представляет ответ на запрос размещения нескольких ордеров
+// BatchOrdersResponse represents response to place multiple orders request
+
 type BatchOrdersResponse struct {
 	BaseResponse
 	Data []BatchOrderResult `json:"data"`
 }
 
-// PlaceTPSLOrderRequest запрос на размещение TPSL ордера
+// PlaceTPSLOrderRequest request to place TPSL order
+
 type PlaceTPSLOrderRequest struct {
 	InstID         string `json:"instId"`                   // Instrument ID
-	MarginMode     string `json:"marginMode"`               // MarginModeCross или MarginModeIsolated
-	PositionSide   string `json:"positionSide"`             // PositionSideLong, PositionSideShort или PositionSideNet
-	Side           string `json:"side"`                     // OrderSideBuy или OrderSideSell
+	MarginMode     string `json:"marginMode"`               // MarginModeCross or MarginModeIsolated
+	PositionSide   string `json:"positionSide"`             // PositionSideLong, PositionSideShort or PositionSideNet
+	Side           string `json:"side"`                     // OrderSideBuy or OrderSideSell
 	TpTriggerPrice string `json:"tpTriggerPrice"`           // Take-profit trigger price
 	TpOrderPrice   string `json:"tpOrderPrice,omitempty"`   // Take-profit order price
 	SlTriggerPrice string `json:"slTriggerPrice,omitempty"` // Stop-loss trigger price
 	SlOrderPrice   string `json:"slOrderPrice,omitempty"`   // Stop-loss order price
-	Size           string `json:"size"`                     // Количество контрактов
-	ReduceOnly     string `json:"reduceOnly,omitempty"`     // true или false
-	ClientOrderId  string `json:"clientOrderId,omitempty"`  // ID ордера клиента
+	Size           string `json:"size"`                     // Number of contracts
+	ReduceOnly     string `json:"reduceOnly,omitempty"`     // true or false
+	ClientOrderId  string `json:"clientOrderId,omitempty"`  // Client order ID
 	BrokerId       string `json:"brokerId,omitempty"`       // Broker ID
 }
 
-// TPSLOrderResult результат выполнения TPSL ордера
+// TPSLOrderResult TPSL order execution result
+
 type TPSLOrderResult struct {
 	TpslId        string `json:"tpslId"`        // TP/SL order ID
 	ClientOrderId string `json:"clientOrderId"` // Client Order ID as assigned by the client
@@ -471,13 +505,15 @@ type TPSLOrderResult struct {
 	Msg           string `json:"msg"`           // Rejection or success message of event execution
 }
 
-// PlaceTPSLOrderResponse представляет ответ на запрос размещения TPSL ордера
+// PlaceTPSLOrderResponse represents response to place TPSL order request
+
 type PlaceTPSLOrderResponse struct {
 	BaseResponse
 	Data TPSLOrderResult `json:"data"`
 }
 
-// AttachAlgoOrder представляет информацию о прикрепленных TP/SL ордерах
+// AttachAlgoOrder represents information about attached TP/SL orders
+
 type AttachAlgoOrder struct {
 	TpTriggerPrice     string `json:"tpTriggerPrice,omitempty"`
 	TpOrderPrice       string `json:"tpOrderPrice,omitempty"`
@@ -487,7 +523,8 @@ type AttachAlgoOrder struct {
 	SlTriggerPriceType string `json:"slTriggerPriceType,omitempty"`
 }
 
-// PlaceAlgoOrderRequest запрос на размещение алго-ордера
+// PlaceAlgoOrderRequest request to place algo order
+
 type PlaceAlgoOrderRequest struct {
 	InstID           string            `json:"instId"`
 	MarginMode       string            `json:"marginMode"`
@@ -504,7 +541,8 @@ type PlaceAlgoOrderRequest struct {
 	AttachAlgoOrders []AttachAlgoOrder `json:"attachAlgoOrders,omitempty"`
 }
 
-// AlgoOrderResult результат выполнения алго-ордера
+// AlgoOrderResult algo order execution result
+
 type AlgoOrderResult struct {
 	AlgoId        string `json:"algoId"`
 	ClientOrderId string `json:"clientOrderId"`
@@ -512,20 +550,23 @@ type AlgoOrderResult struct {
 	Msg           string `json:"msg"`
 }
 
-// PlaceAlgoOrderResponse представляет ответ на запрос размещения алго-ордера
+// PlaceAlgoOrderResponse represents response to place algo order request
+
 type PlaceAlgoOrderResponse struct {
 	BaseResponse
 	Data AlgoOrderResult `json:"data"`
 }
 
-// CancelOrderRequest запрос на отмену ордера
+// CancelOrderRequest request to cancel order
+
 type CancelOrderRequest struct {
 	InstID        string `json:"instId,omitempty"`
 	OrderId       string `json:"orderId"`
 	ClientOrderId string `json:"clientOrderId,omitempty"`
 }
 
-// CancelOrderResult результат отмены ордера
+// CancelOrderResult order cancellation result
+
 type CancelOrderResult struct {
 	OrderId       string `json:"orderId"`       // Order ID
 	ClientOrderId string `json:"clientOrderId"` // Client Order ID
@@ -533,26 +574,30 @@ type CancelOrderResult struct {
 	Msg           string `json:"msg"`           // Rejection or success message of event execution
 }
 
-// CancelOrderResponse представляет ответ на запрос отмены ордера
+// CancelOrderResponse represents response to cancel order request
+
 type CancelOrderResponse struct {
 	BaseResponse
 	Data CancelOrderResult `json:"data"`
 }
 
-// CancelBatchOrdersResponse представляет ответ на запрос отмены нескольких ордеров
+// CancelBatchOrdersResponse represents response to cancel multiple orders request
+
 type CancelBatchOrdersResponse struct {
 	BaseResponse
 	Data []CancelOrderResult `json:"data"`
 }
 
-// CancelTPSLOrderRequest запрос на отмену TPSL ордера
+// CancelTPSLOrderRequest request to cancel TPSL order
+
 type CancelTPSLOrderRequest struct {
 	InstID        string `json:"instId,omitempty"`
 	TpslId        string `json:"tpslId,omitempty"`
 	ClientOrderId string `json:"clientOrderId,omitempty"`
 }
 
-// CancelTPSLOrderResult результат отмены TPSL ордера
+// CancelTPSLOrderResult TPSL order cancellation result
+
 type CancelTPSLOrderResult struct {
 	TpslId        string `json:"tpslId"`        // TP/SL order ID
 	ClientOrderId string `json:"clientOrderId"` // Client Order ID
@@ -560,20 +605,23 @@ type CancelTPSLOrderResult struct {
 	Msg           string `json:"msg"`           // Rejection or success message of event execution
 }
 
-// CancelTPSLOrderResponse представляет ответ на запрос отмены TPSL ордера
+// CancelTPSLOrderResponse represents response to cancel TPSL order request
+
 type CancelTPSLOrderResponse struct {
 	BaseResponse
 	Data []CancelTPSLOrderResult `json:"data"`
 }
 
-// CancelAlgoOrderRequest запрос на отмену алго-ордера
+// CancelAlgoOrderRequest request to cancel algo order
+
 type CancelAlgoOrderRequest struct {
 	InstID        string `json:"instId,omitempty"`
 	AlgoId        string `json:"algoId,omitempty"`
 	ClientOrderId string `json:"clientOrderId,omitempty"`
 }
 
-// CancelAlgoOrderResult результат отмены алго-ордера
+// CancelAlgoOrderResult algo order cancellation result
+
 type CancelAlgoOrderResult struct {
 	AlgoId        string `json:"algoId"`        // Algo order ID
 	ClientOrderId string `json:"clientOrderId"` // Client Order ID
@@ -581,13 +629,15 @@ type CancelAlgoOrderResult struct {
 	Msg           string `json:"msg"`           // Rejection or success message of event execution
 }
 
-// CancelAlgoOrderResponse представляет ответ на запрос отмены алго-ордера
+// CancelAlgoOrderResponse represents response to cancel algo order request
+
 type CancelAlgoOrderResponse struct {
 	BaseResponse
 	Data CancelAlgoOrderResult `json:"data"`
 }
 
-// PendingOrder представляет информацию об активном ордере
+// PendingOrder represents information about active order
+
 type PendingOrder struct {
 	OrderId           string `json:"orderId"`           // Order ID
 	ClientOrderId     string `json:"clientOrderId"`     // Client Order ID
@@ -618,13 +668,15 @@ type PendingOrder struct {
 	BrokerId          string `json:"brokerId"`          // Broker ID
 }
 
-// GetPendingOrdersResponse представляет ответ на запрос активных ордеров
+// GetPendingOrdersResponse represents response to active orders request
+
 type GetPendingOrdersResponse struct {
 	BaseResponse
 	Data []PendingOrder `json:"data"`
 }
 
-// PendingTPSLOrder представляет информацию об активном TPSL ордере
+// PendingTPSLOrder represents information about active TPSL order
+
 type PendingTPSLOrder struct {
 	TpslId         string `json:"tpslId"`         // TP/SL order ID
 	InstId         string `json:"instId"`         // Instrument ID
@@ -645,13 +697,15 @@ type PendingTPSLOrder struct {
 	BrokerId       string `json:"brokerId"`       // Broker ID
 }
 
-// GetPendingTPSLOrdersResponse представляет ответ на запрос активных TPSL ордеров
+// GetPendingTPSLOrdersResponse represents response to active TPSL orders request
+
 type GetPendingTPSLOrdersResponse struct {
 	BaseResponse
 	Data []PendingTPSLOrder `json:"data"`
 }
 
-// PendingAlgoOrder представляет информацию об активном алго-ордере
+// PendingAlgoOrder represents information about active algo order
+
 type PendingAlgoOrder struct {
 	AlgoId           string            `json:"algoId"`           // Algo order ID
 	ClientOrderId    string            `json:"clientOrderId"`    // Client Order ID
@@ -670,13 +724,15 @@ type PendingAlgoOrder struct {
 	AttachAlgoOrders []AttachAlgoOrder `json:"attachAlgoOrders"` // Attached SL/TP orders
 }
 
-// GetPendingAlgoOrdersResponse представляет ответ на запрос активных алго-ордеров
+// GetPendingAlgoOrdersResponse represents response to active algo orders request
+
 type GetPendingAlgoOrdersResponse struct {
 	BaseResponse
 	Data []PendingAlgoOrder `json:"data"`
 }
 
-// ClosePositionRequest запрос на закрытие позиции
+// ClosePositionRequest request to close position
+
 type ClosePositionRequest struct {
 	InstID        string `json:"instId"`        // Instrument ID
 	MarginMode    string `json:"marginMode"`    // Margin mode (cross/isolated)
@@ -685,7 +741,8 @@ type ClosePositionRequest struct {
 	BrokerId      string `json:"brokerId"`      // Broker ID
 }
 
-// ClosePositionResponse представляет ответ на запрос закрытия позиции
+// ClosePositionResponse represents response to close position request
+
 type ClosePositionResponse struct {
 	BaseResponse
 	Data struct {
@@ -695,7 +752,8 @@ type ClosePositionResponse struct {
 	} `json:"data"`
 }
 
-// OrderHistory представляет информацию об ордере в истории
+// OrderHistory represents information about order in history
+
 type OrderHistory struct {
 	OrderId            string `json:"orderId"`            // Order ID
 	ClientOrderId      string `json:"clientOrderId"`      // Client Order ID
@@ -727,13 +785,15 @@ type OrderHistory struct {
 	BrokerId           string `json:"brokerId"`           // Broker ID
 }
 
-// GetOrderHistoryResponse представляет ответ на запрос истории ордеров
+// GetOrderHistoryResponse represents response to order history request
+
 type GetOrderHistoryResponse struct {
 	BaseResponse
 	Data []OrderHistory `json:"data"`
 }
 
 // TPSLOrderHistory represents information about a TPSL order in history
+
 type TPSLOrderHistory struct {
 	TpslId         string `json:"tpslId"`
 	ClientOrderId  string `json:"clientOrderId"`
@@ -758,12 +818,14 @@ type TPSLOrderHistory struct {
 }
 
 // GetTPSLOrderHistoryResponse represents the response structure for TPSL order history request
+
 type GetTPSLOrderHistoryResponse struct {
 	BaseResponse
 	Data []TPSLOrderHistory `json:"data"`
 }
 
 // AlgoOrderHistory represents information about an algo order in history
+
 type AlgoOrderHistory struct {
 	AlgoId           string            `json:"algoId"`           // Algo order ID
 	ClientOrderId    string            `json:"clientOrderId"`    // Client Order ID
@@ -785,12 +847,14 @@ type AlgoOrderHistory struct {
 }
 
 // GetAlgoOrderHistoryResponse represents the response structure for algo order history request
+
 type GetAlgoOrderHistoryResponse struct {
 	BaseResponse
 	Data []AlgoOrderHistory `json:"data"`
 }
 
 // TradeHistory represents information about a trade in history
+
 type TradeHistory struct {
 	InstId       string `json:"instId"`       // Instrument ID
 	TradeId      string `json:"tradeId"`      // Trade ID
@@ -806,12 +870,14 @@ type TradeHistory struct {
 }
 
 // GetTradeHistoryResponse represents the response structure for trade history request
+
 type GetTradeHistoryResponse struct {
 	BaseResponse
 	Data []TradeHistory `json:"data"`
 }
 
 // GetOrderPriceRangeResponse represents the response structure for the order price range request
+
 type GetOrderPriceRangeResponse struct {
 	BaseResponse
 	Data struct {

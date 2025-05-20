@@ -6,7 +6,7 @@ import (
 )
 
 func TestModelUnmarshal(t *testing.T) {
-	// TODO: реализовать тесты для проверки сериализации/десериализации моделей (например, Instrument, Ticker и др.)
+	// TODO: implement tests for model serialization/deserialization (e.g. Instrument, Ticker etc.)
 	_ = json.Unmarshal
 }
 

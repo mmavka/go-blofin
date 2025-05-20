@@ -51,11 +51,11 @@ const (
 
 // Order Types
 const (
-	OrderTypeLimit    = "limit"     // Лимитный ордер
-	OrderTypeMarket   = "market"    // Рыночный ордер
-	OrderTypePostOnly = "post_only" // Post-only ордер
-	OrderTypeFOK      = "fok"       // Fill-or-kill ордер
-	OrderTypeIOC      = "ioc"       // Immediate-or-cancel ордер
+	OrderTypeLimit    = "limit"     // Limit order
+	OrderTypeMarket   = "market"    // Market order
+	OrderTypePostOnly = "post_only" // Post-only order
+	OrderTypeFOK      = "fok"       // Fill-or-kill order
+	OrderTypeIOC      = "ioc"       // Immediate-or-cancel order
 )
 
 // Order Side

@@ -1,6 +1,6 @@
 /**
  * @file: client.go
- * @description: WebSocket клиент для BloFin (public/private, ping/pong, подписки)
+ * @description: WebSocket client for BloFin (public/private, ping/pong, subscription)
  * @dependencies: models.go, signature.go
  * @created: 2025-05-19
  */
@@ -18,11 +18,11 @@ import (
 )
 
 const (
-	// Интервал для ping/pong (25 секунд < 30 секунд лимита)
+	// Ping/pong interval (25 seconds < 30 seconds limit)
 	pingInterval = 25 * time.Second
 	pongTimeout  = 5 * time.Second
 
-	// Ограничение на новые подключения
+	// New connection limit
 	reconnectDelay = time.Second
 )
 
@@ -30,7 +30,7 @@ var privateChannels = map[string]struct{}{
 	"orders":      {},
 	"positions":   {},
 	"orders-algo": {},
-	// можно добавить другие приватные каналы по мере необходимости
+	// can add other private channels as needed
 }
 
 type Client struct {
@@ -48,16 +48,16 @@ type Client struct {
 	errorHandler func(error)
 	isLoggedIn   bool
 
-	// Для ping/pong
+	// For ping/pong
 	pingTimer    *time.Timer
 	pongTimer    *time.Timer
 	lastPongTime time.Time
 
-	// Для переподключения
+	// For reconnection
 	reconnecting bool
 	mu           sync.Mutex
 
-	// Сохранение подписок для переподключения
+	// Save subscriptions for reconnection
 	subscriptions []ChannelArgs
 	credentials   *LoginCredentials
 }
@@ -92,10 +92,10 @@ func (c *Client) Connect() error {
 	defer c.mu.Unlock()
 
 	if c.reconnecting {
-		time.Sleep(reconnectDelay) // Ограничение: 1 подключение в секунду
+		time.Sleep(reconnectDelay) // Limit: 1 connection per second
 	}
 
-	// Закрываем предыдущее соединение если есть
+	// Close previous connection if exists
 	if c.conn != nil {
 		c.conn.Close()
 	}
@@ -112,13 +112,13 @@ func (c *Client) Connect() error {
 
 	c.conn = conn
 
-	// Настройка ping/pong
+	// Setup ping/pong
 	c.setupPingPong()
 
-	// Запуск чтения сообщений
+	// Start message reading
 	go c.readLoop()
 
-	// Восстановление состояния после переподключения
+	// Restore state after reconnection
 	if c.credentials != nil {
 		if err := c.Login(c.credentials.ApiKey, c.credentials.Secret, c.credentials.Passphrase); err != nil {
 			return fmt.Errorf("failed to restore login: %w", err)
@@ -138,7 +138,7 @@ func (c *Client) setupPingPong() {
 	c.pingTimer = time.NewTimer(pingInterval)
 	c.pongTimer = time.NewTimer(pongTimeout)
 
-	// Обработчик pong сообщений
+	// Pong message handler
 	c.conn.SetPongHandler(func(string) error {
 		c.mu.Lock()
 		c.lastPongTime = time.Now()
@@ -147,7 +147,7 @@ func (c *Client) setupPingPong() {
 		return nil
 	})
 
-	// Горутина для отправки ping
+	// Goroutine for sending ping
 	go func() {
 		for {
 			select {
@@ -237,11 +237,11 @@ func (c *Client) readLoop() {
 		select {
 		case c.messages <- msg:
 		default:
-			// Канал переполнен или закрыт, пропускаем
+			// Channel overflow or closed, skip
 			continue
 		}
 
-		// Базовая структура для определения типа события
+		// Base structure for event type determination
 		var base struct {
 			Arg struct {
 				Channel string `json:"channel"`
@@ -287,7 +287,7 @@ func (c *Client) readLoop() {
 				}
 			}
 		default:
-			// Проверка на свечи (канал начинается с candle)
+			// Check for candles (channel starts with candle)
 			if len(base.Arg.Channel) >= 6 && base.Arg.Channel[:6] == "candle" {
 				var candleMsg CandleWSMessage
 				if err := json.Unmarshal(msg, &candleMsg); err == nil {
@@ -309,7 +309,7 @@ func (c *Client) Send(v any) error {
 	return c.conn.WriteMessage(websocket.TextMessage, data)
 }
 
-// Login для приватных каналов
+// Login for private channels
 func (c *Client) Login(apiKey, secret, passphrase string) error {
 	c.credentials = &LoginCredentials{
 		ApiKey:     apiKey,
@@ -337,12 +337,12 @@ func (c *Client) Login(apiKey, secret, passphrase string) error {
 	return err
 }
 
-// Subscribe к каналам
+// Subscribe to channels
 func (c *Client) Subscribe(channels []ChannelArgs) error {
-	// Сохраняем подписки для переподключения
+	// Save subscriptions for reconnection
 	c.subscriptions = append(c.subscriptions, channels...)
 
-	// Проверка приватных каналов
+	// Check private channels
 	for _, ch := range channels {
 		if _, ok := privateChannels[ch.Channel]; ok && !c.isLoggedIn {
 			return fmt.Errorf("subscription to private channel '%s' requires login", ch.Channel)
@@ -363,7 +363,7 @@ func (c *Client) Subscribe(channels []ChannelArgs) error {
 	return c.Send(req)
 }
 
-// Unsubscribe от каналов
+// Unsubscribe from channels
 func (c *Client) Unsubscribe(channels []ChannelArgs) error {
 	req := UnsubscribeRequest{
 		Op:   "unsubscribe",
@@ -372,47 +372,47 @@ func (c *Client) Unsubscribe(channels []ChannelArgs) error {
 	return c.Send(req)
 }
 
-// Ping отправка ping
+// Ping send ping
 func (c *Client) Ping() error {
 	return c.conn.WriteMessage(websocket.TextMessage, []byte("ping"))
 }
 
-// Messages возвращает канал для чтения сообщений
+// Messages returns channel for reading messages
 func (c *Client) Messages() <-chan []byte {
 	return c.messages
 }
 
-// Errors возвращает канал ошибок
+// Errors returns error channel
 func (c *Client) Errors() <-chan error {
 	return c.errors
 }
 
-// Trades возвращает канал для push trades
+// Trades returns channel for push trades
 func (c *Client) Trades() <-chan TradeWSMessage {
 	return c.trades
 }
 
-// Candles возвращает канал для push свечей
+// Candles returns channel for push candles
 func (c *Client) Candles() <-chan CandleWSMessage {
 	return c.candles
 }
 
-// OrderBooks возвращает канал для push order book
+// OrderBooks returns channel for push order book
 func (c *Client) OrderBooks() <-chan OrderBookWSMessage {
 	return c.orderBooks
 }
 
-// Tickers возвращает канал для push тикеров
+// Tickers returns channel for push tickers
 func (c *Client) Tickers() <-chan TickerWSMessage {
 	return c.tickers
 }
 
-// FundingRates возвращает канал для push funding-rate
+// FundingRates returns channel for push funding-rate
 func (c *Client) FundingRates() <-chan FundingRateWSMessage {
 	return c.fundingRates
 }
 
-// Пример использования:
+// Usage example:
 // ws := ws.NewDefaultClient()
 // ws.SetErrorHandler(func(err error) {
 //     log.Printf("WebSocket error: %v", err)

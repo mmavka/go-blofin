@@ -135,7 +135,7 @@ func TestRestClientSetBaseURL(t *testing.T) {
 	if client.baseURL != newURL {
 		t.Errorf("baseURL not updated: got %s, want %s", client.baseURL, newURL)
 	}
-	// Проверим, что httpClient тоже обновлён (через SetBaseURL)
+	// Check that httpClient is also updated (via SetBaseURL)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		called = true
 		w.Write([]byte(`{"code":"0","data":[]}`))

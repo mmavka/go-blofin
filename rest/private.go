@@ -246,6 +246,7 @@ func (s *TransferFundsService) Do(ctx context.Context) (*TransferResponse, error
 	if err != nil {
 		return nil, err
 	}
+
 	var result TransferResponse
 	if err := json.Unmarshal(resp.Body(), &result); err != nil {
 		return nil, err
@@ -292,12 +293,12 @@ func (s *GetBalancesService) Do(ctx context.Context) (*GetBalanceResponse, error
 	return &result, nil
 }
 
-// GetAccountBalanceService сервис для получения баланса фьючерсного аккаунта
+// GetAccountBalance returns service for getting futures account balance
 type GetAccountBalanceService struct {
 	c *RestClient
 }
 
-// Do выполняет запрос
+// Do executes the request
 func (s *GetAccountBalanceService) Do(ctx context.Context) (*AccountBalanceResponse, error) {
 	resp := &AccountBalanceResponse{}
 	path := "/api/v1/account/balance"
@@ -315,7 +316,10 @@ func (c *RestClient) GetAccountBalance() *GetAccountBalanceService {
 	return &GetAccountBalanceService{c: c}
 }
 
-// GetPositionsService сервис для получения информации о позициях
+// GetPositionsService service for getting position information
+// InstId sets instrument ID (optional)
+// Do executes the request
+// GetPositions returns service for getting position information
 type GetPositionsService struct {
 	c      *RestClient
 	instId string
@@ -359,7 +363,9 @@ func (c *RestClient) GetPositions() *GetPositionsService {
 	return &GetPositionsService{c: c}
 }
 
-// GetMarginModeService сервис для получения режима маржи
+// GetMarginModeService service for getting margin mode
+// Do executes the request
+// GetMarginMode returns service for getting margin mode
 type GetMarginModeService struct {
 	c *RestClient
 }
@@ -386,6 +392,10 @@ func (c *RestClient) GetMarginMode() *GetMarginModeService {
 	return &GetMarginModeService{c: c}
 }
 
+// SetMarginModeService service for setting margin mode
+// MarginMode sets margin mode (cross/isolated)
+// Do executes the request
+// SetMarginMode returns service for setting margin mode
 // SetMarginModeService сервис для установки режима маржи
 type SetMarginModeService struct {
 	c          *RestClient
@@ -433,7 +443,9 @@ func (c *RestClient) SetMarginMode() *SetMarginModeService {
 	return &SetMarginModeService{c: c}
 }
 
-// GetPositionModeService сервис для получения режима позиций
+// GetPositionModeService service for getting position mode
+// Do executes the request
+// GetPositionMode returns service for getting position mode
 type GetPositionModeService struct {
 	c *RestClient
 }
@@ -460,7 +472,10 @@ func (c *RestClient) GetPositionMode() *GetPositionModeService {
 	return &GetPositionModeService{c: c}
 }
 
-// SetPositionModeService сервис для установки режима позиций
+// SetPositionModeService service for setting position mode
+// PositionMode sets position mode (net_mode/long_short_mode)
+// Do executes the request
+// SetPositionMode returns service for setting position mode
 type SetPositionModeService struct {
 	c            *RestClient
 	positionMode string
@@ -507,20 +522,20 @@ func (c *RestClient) SetPositionMode() *SetPositionModeService {
 	return &SetPositionModeService{c: c}
 }
 
-// GetLeverageInfoService сервис для получения информации о плече (deprecated)
+// GetLeverageInfoService service for getting leverage information (deprecated)
 type GetLeverageInfoService struct {
 	c          *RestClient
 	instId     string
 	marginMode string
 }
 
-// InstId устанавливает ID инструмента
+// InstId sets instrument ID
 func (s *GetLeverageInfoService) InstId(instId string) *GetLeverageInfoService {
 	s.instId = instId
 	return s
 }
 
-// MarginMode устанавливает режим маржи (cross/isolated)
+// MarginMode sets margin mode (cross/isolated)
 func (s *GetLeverageInfoService) MarginMode(marginMode string) *GetLeverageInfoService {
 	s.marginMode = marginMode
 	return s
@@ -555,36 +570,36 @@ func (s *GetLeverageInfoService) Do(ctx context.Context) (*GetLeverageInfoRespon
 	return &result, nil
 }
 
-// GetLeverageInfo возвращает сервис для получения информации о плече (deprecated)
+// GetLeverageInfo returns service for getting leverage information (deprecated)
 func (c *RestClient) GetLeverageInfo() *GetLeverageInfoService {
 	return &GetLeverageInfoService{c: c}
 }
 
-// GetBatchLeverageInfoService сервис для получения информации о плече для нескольких инструментов
+// GetBatchLeverageInfoService service for getting leverage information for multiple instruments
 type GetBatchLeverageInfoService struct {
 	c          *RestClient
 	instIds    []string
 	marginMode string
 }
 
-// NewGetBatchLeverageInfoService создает новый сервис
+// NewGetBatchLeverageInfoService creates a new service
 func (c *RestClient) NewGetBatchLeverageInfoService() *GetBatchLeverageInfoService {
 	return &GetBatchLeverageInfoService{c: c}
 }
 
-// InstIds устанавливает список инструментов (не более 20)
+// InstIds sets list of instruments (not more than 20)
 func (s *GetBatchLeverageInfoService) InstIds(instIds []string) *GetBatchLeverageInfoService {
 	s.instIds = instIds
 	return s
 }
 
-// MarginMode устанавливает режим маржи
+// MarginMode sets margin mode
 func (s *GetBatchLeverageInfoService) MarginMode(marginMode string) *GetBatchLeverageInfoService {
 	s.marginMode = marginMode
 	return s
 }
 
-// Do выполняет запрос
+// Do executes request
 func (s *GetBatchLeverageInfoService) Do(ctx context.Context) (*GetBatchLeverageInfoResponse, error) {
 	if len(s.instIds) == 0 {
 		return nil, fmt.Errorf("instIds required")
@@ -612,7 +627,7 @@ func (s *GetBatchLeverageInfoService) Do(ctx context.Context) (*GetBatchLeverage
 	return resp, nil
 }
 
-// SetLeverageService сервис для установки плеча
+// SetLeverageService service for setting leverage
 type SetLeverageService struct {
 	c            *RestClient
 	instId       string
@@ -621,36 +636,36 @@ type SetLeverageService struct {
 	positionSide string
 }
 
-// NewSetLeverageService создает новый сервис
+// NewSetLeverageService creates a new service
 func (c *RestClient) NewSetLeverageService() *SetLeverageService {
 	return &SetLeverageService{c: c}
 }
 
-// InstId устанавливает ID инструмента
+// InstId sets instrument ID
 func (s *SetLeverageService) InstId(instId string) *SetLeverageService {
 	s.instId = instId
 	return s
 }
 
-// Leverage устанавливает значение плеча
+// Leverage sets leverage value
 func (s *SetLeverageService) Leverage(leverage string) *SetLeverageService {
 	s.leverage = leverage
 	return s
 }
 
-// MarginMode устанавливает режим маржи
+// MarginMode sets margin mode
 func (s *SetLeverageService) MarginMode(marginMode string) *SetLeverageService {
 	s.marginMode = marginMode
 	return s
 }
 
-// PositionSide устанавливает сторону позиции (опционально)
+// PositionSide sets position side (optional)
 func (s *SetLeverageService) PositionSide(positionSide string) *SetLeverageService {
 	s.positionSide = positionSide
 	return s
 }
 
-// Do выполняет запрос
+// Do executes request
 func (s *SetLeverageService) Do(ctx context.Context) (*SetLeverageResponse, error) {
 	if s.instId == "" {
 		return nil, fmt.Errorf("instId required")
@@ -692,92 +707,92 @@ func (s *SetLeverageService) Do(ctx context.Context) (*SetLeverageResponse, erro
 	return &result, nil
 }
 
-// PlaceOrderService сервис для размещения ордера
+// PlaceOrderService service for placing an order
 type PlaceOrderService struct {
 	c     *RestClient
 	order PlaceOrderRequest
 }
 
-// NewPlaceOrderService создает новый сервис
+// NewPlaceOrderService creates a new service
 func (c *RestClient) NewPlaceOrderService() *PlaceOrderService {
 	return &PlaceOrderService{c: c}
 }
 
-// InstId устанавливает ID инструмента
+// InstId sets instrument ID
 func (s *PlaceOrderService) InstId(instId string) *PlaceOrderService {
 	s.order.InstID = instId
 	return s
 }
 
-// MarginMode устанавливает режим маржи
+// MarginMode sets margin mode
 func (s *PlaceOrderService) MarginMode(marginMode string) *PlaceOrderService {
 	s.order.MarginMode = marginMode
 	return s
 }
 
-// PositionSide устанавливает сторону позиции
+// PositionSide sets position side
 func (s *PlaceOrderService) PositionSide(positionSide string) *PlaceOrderService {
 	s.order.PositionSide = positionSide
 	return s
 }
 
-// Side устанавливает сторону ордера
+// Side sets order side
 func (s *PlaceOrderService) Side(side string) *PlaceOrderService {
 	s.order.Side = side
 	return s
 }
 
-// OrderType устанавливает тип ордера
+// OrderType sets order type
 func (s *PlaceOrderService) OrderType(orderType string) *PlaceOrderService {
 	s.order.OrderType = orderType
 	return s
 }
 
-// Price устанавливает цену ордера
+// Price sets order price
 func (s *PlaceOrderService) Price(price string) *PlaceOrderService {
 	s.order.Price = price
 	return s
 }
 
-// Size устанавливает размер ордера
+// Size sets order size
 func (s *PlaceOrderService) Size(size string) *PlaceOrderService {
 	s.order.Size = size
 	return s
 }
 
-// ReduceOnly устанавливает флаг reduceOnly
+// ReduceOnly sets reduceOnly flag
 func (s *PlaceOrderService) ReduceOnly(reduceOnly string) *PlaceOrderService {
 	s.order.ReduceOnly = reduceOnly
 	return s
 }
 
-// ClientOrderId устанавливает ID ордера клиента
+// ClientOrderId sets client order ID
 func (s *PlaceOrderService) ClientOrderId(clientOrderId string) *PlaceOrderService {
 	s.order.ClientOrderId = clientOrderId
 	return s
 }
 
-// TakeProfitParams устанавливает параметры take-profit
+// TakeProfitParams sets take-profit parameters
 func (s *PlaceOrderService) TakeProfitParams(triggerPrice, orderPrice string) *PlaceOrderService {
 	s.order.TpTriggerPrice = triggerPrice
 	s.order.TpOrderPrice = orderPrice
 	return s
 }
 
-// StopLossParams устанавливает параметры stop-loss
+// StopLossParams sets stop-loss parameters
 func (s *PlaceOrderService) StopLossParams(triggerPrice, orderPrice string) *PlaceOrderService {
 	s.order.SlTriggerPrice = triggerPrice
 	s.order.SlOrderPrice = orderPrice
 	return s
 }
 
-// BrokerId устанавливает ID брокера
+// BrokerId sets broker ID
 func (s *PlaceOrderService) BrokerId(brokerId string) *PlaceOrderService {
 	s.order.BrokerId = brokerId
 	return s
 }
 
-// Do выполняет запрос
+// Do executes request
 func (s *PlaceOrderService) Do(ctx context.Context) (*PlaceOrderResponse, error) {
 	if s.order.InstID == "" {
 		return nil, fmt.Errorf("instId required")
@@ -821,30 +836,30 @@ func (s *PlaceOrderService) Do(ctx context.Context) (*PlaceOrderResponse, error)
 	return &result, nil
 }
 
-// PlaceBatchOrdersService сервис для размещения нескольких ордеров
+// PlaceBatchOrdersService service for placing multiple orders
 type PlaceBatchOrdersService struct {
 	c      *RestClient
 	orders []PlaceOrderRequest
 }
 
-// NewPlaceBatchOrdersService создает новый сервис
+// NewPlaceBatchOrdersService creates a new service
 func (c *RestClient) NewPlaceBatchOrdersService() *PlaceBatchOrdersService {
 	return &PlaceBatchOrdersService{c: c}
 }
 
-// Orders устанавливает список ордеров
+// Orders sets list of orders
 func (s *PlaceBatchOrdersService) Orders(orders []PlaceOrderRequest) *PlaceBatchOrdersService {
 	s.orders = orders
 	return s
 }
 
-// AddOrder добавляет ордер в список
+// AddOrder adds an order to the list
 func (s *PlaceBatchOrdersService) AddOrder(order PlaceOrderRequest) *PlaceBatchOrdersService {
 	s.orders = append(s.orders, order)
 	return s
 }
 
-// Do выполняет запрос
+// Do executes request
 func (s *PlaceBatchOrdersService) Do(ctx context.Context) (*BatchOrdersResponse, error) {
 	if len(s.orders) == 0 {
 		return nil, fmt.Errorf("at least one order required")
@@ -853,7 +868,7 @@ func (s *PlaceBatchOrdersService) Do(ctx context.Context) (*BatchOrdersResponse,
 		return nil, fmt.Errorf("too many orders (max 20)")
 	}
 
-	// Проверяем, что все ордера для одного инструмента
+	// Check that all orders are for the same instrument
 	firstInstId := s.orders[0].InstID
 	for _, order := range s.orders[1:] {
 		if order.InstID != firstInstId {
@@ -861,7 +876,7 @@ func (s *PlaceBatchOrdersService) Do(ctx context.Context) (*BatchOrdersResponse,
 		}
 	}
 
-	// Проверяем обязательные параметры для каждого ордера
+	// Check that all orders have required parameters
 	for i, order := range s.orders {
 		if order.InstID == "" {
 			return nil, fmt.Errorf("order %d: instId required", i)
@@ -906,80 +921,80 @@ func (s *PlaceBatchOrdersService) Do(ctx context.Context) (*BatchOrdersResponse,
 	return &result, nil
 }
 
-// PlaceTPSLOrderService сервис для размещения TPSL ордера
+// PlaceTPSLOrderService service for placing TPSL order
 type PlaceTPSLOrderService struct {
 	c     *RestClient
 	order PlaceTPSLOrderRequest
 }
 
-// NewPlaceTPSLOrderService создает новый сервис
+// NewPlaceTPSLOrderService creates a new service
 func (c *RestClient) NewPlaceTPSLOrderService() *PlaceTPSLOrderService {
 	return &PlaceTPSLOrderService{c: c}
 }
 
-// InstId устанавливает ID инструмента
+// InstId sets instrument ID
 func (s *PlaceTPSLOrderService) InstId(instId string) *PlaceTPSLOrderService {
 	s.order.InstID = instId
 	return s
 }
 
-// MarginMode устанавливает режим маржи
+// MarginMode sets margin mode
 func (s *PlaceTPSLOrderService) MarginMode(marginMode string) *PlaceTPSLOrderService {
 	s.order.MarginMode = marginMode
 	return s
 }
 
-// PositionSide устанавливает сторону позиции
+// PositionSide sets position side
 func (s *PlaceTPSLOrderService) PositionSide(positionSide string) *PlaceTPSLOrderService {
 	s.order.PositionSide = positionSide
 	return s
 }
 
-// Side устанавливает сторону ордера
+// Side sets order side
 func (s *PlaceTPSLOrderService) Side(side string) *PlaceTPSLOrderService {
 	s.order.Side = side
 	return s
 }
 
-// TakeProfitParams устанавливает параметры take-profit
+// TakeProfitParams sets take-profit parameters
 func (s *PlaceTPSLOrderService) TakeProfitParams(triggerPrice, orderPrice string) *PlaceTPSLOrderService {
 	s.order.TpTriggerPrice = triggerPrice
 	s.order.TpOrderPrice = orderPrice
 	return s
 }
 
-// StopLossParams устанавливает параметры stop-loss
+// StopLossParams sets stop-loss parameters
 func (s *PlaceTPSLOrderService) StopLossParams(triggerPrice, orderPrice string) *PlaceTPSLOrderService {
 	s.order.SlTriggerPrice = triggerPrice
 	s.order.SlOrderPrice = orderPrice
 	return s
 }
 
-// Size устанавливает размер ордера
+// Size sets order size
 func (s *PlaceTPSLOrderService) Size(size string) *PlaceTPSLOrderService {
 	s.order.Size = size
 	return s
 }
 
-// ReduceOnly устанавливает флаг reduceOnly
+// ReduceOnly sets reduceOnly flag
 func (s *PlaceTPSLOrderService) ReduceOnly(reduceOnly string) *PlaceTPSLOrderService {
 	s.order.ReduceOnly = reduceOnly
 	return s
 }
 
-// ClientOrderId устанавливает ID ордера клиента
+// ClientOrderId sets client order ID
 func (s *PlaceTPSLOrderService) ClientOrderId(clientOrderId string) *PlaceTPSLOrderService {
 	s.order.ClientOrderId = clientOrderId
 	return s
 }
 
-// BrokerId устанавливает ID брокера
+// BrokerId sets broker ID
 func (s *PlaceTPSLOrderService) BrokerId(brokerId string) *PlaceTPSLOrderService {
 	s.order.BrokerId = brokerId
 	return s
 }
 
-// Do выполняет запрос
+// Do executes request
 func (s *PlaceTPSLOrderService) Do(ctx context.Context) (*PlaceTPSLOrderResponse, error) {
 	if s.order.InstID == "" {
 		return nil, fmt.Errorf("instId required")
@@ -1026,96 +1041,96 @@ func (s *PlaceTPSLOrderService) Do(ctx context.Context) (*PlaceTPSLOrderResponse
 	return &result, nil
 }
 
-// PlaceAlgoOrderService сервис для размещения алго-ордера
+// PlaceAlgoOrderService service for placing algo order
 type PlaceAlgoOrderService struct {
 	c     *RestClient
 	order PlaceAlgoOrderRequest
 }
 
-// NewPlaceAlgoOrderService создает новый сервис
+// NewPlaceAlgoOrderService creates a new service
 func (c *RestClient) NewPlaceAlgoOrderService() *PlaceAlgoOrderService {
 	return &PlaceAlgoOrderService{c: c}
 }
 
-// InstId устанавливает ID инструмента
+// InstId sets instrument ID
 func (s *PlaceAlgoOrderService) InstId(instId string) *PlaceAlgoOrderService {
 	s.order.InstID = instId
 	return s
 }
 
-// MarginMode устанавливает режим маржи
+// MarginMode sets margin mode
 func (s *PlaceAlgoOrderService) MarginMode(marginMode string) *PlaceAlgoOrderService {
 	s.order.MarginMode = marginMode
 	return s
 }
 
-// PositionSide устанавливает сторону позиции
+// PositionSide sets position side
 func (s *PlaceAlgoOrderService) PositionSide(positionSide string) *PlaceAlgoOrderService {
 	s.order.PositionSide = positionSide
 	return s
 }
 
-// Side устанавливает сторону ордера
+// Side sets order side
 func (s *PlaceAlgoOrderService) Side(side string) *PlaceAlgoOrderService {
 	s.order.Side = side
 	return s
 }
 
-// Size устанавливает размер ордера
+// Size sets order size
 func (s *PlaceAlgoOrderService) Size(size string) *PlaceAlgoOrderService {
 	s.order.Size = size
 	return s
 }
 
-// ClientOrderId устанавливает ID ордера клиента
+// ClientOrderId sets client order ID
 func (s *PlaceAlgoOrderService) ClientOrderId(clientOrderId string) *PlaceAlgoOrderService {
 	s.order.ClientOrderId = clientOrderId
 	return s
 }
 
-// OrderPrice устанавливает цену ордера
+// OrderPrice sets order price
 func (s *PlaceAlgoOrderService) OrderPrice(orderPrice string) *PlaceAlgoOrderService {
 	s.order.OrderPrice = orderPrice
 	return s
 }
 
-// OrderType устанавливает тип алго-ордера
+// OrderType sets order type
 func (s *PlaceAlgoOrderService) OrderType(orderType string) *PlaceAlgoOrderService {
 	s.order.OrderType = orderType
 	return s
 }
 
-// TriggerPrice устанавливает триггерную цену
+// TriggerPrice sets trigger price
 func (s *PlaceAlgoOrderService) TriggerPrice(triggerPrice string) *PlaceAlgoOrderService {
 	s.order.TriggerPrice = triggerPrice
 	return s
 }
 
-// TriggerPriceType устанавливает тип триггерной цены
+// TriggerPriceType sets trigger price type
 func (s *PlaceAlgoOrderService) TriggerPriceType(triggerPriceType string) *PlaceAlgoOrderService {
 	s.order.TriggerPriceType = triggerPriceType
 	return s
 }
 
-// ReduceOnly устанавливает флаг reduceOnly
+// ReduceOnly sets reduceOnly flag
 func (s *PlaceAlgoOrderService) ReduceOnly(reduceOnly string) *PlaceAlgoOrderService {
 	s.order.ReduceOnly = reduceOnly
 	return s
 }
 
-// BrokerId устанавливает ID брокера
+// BrokerId sets broker ID
 func (s *PlaceAlgoOrderService) BrokerId(brokerId string) *PlaceAlgoOrderService {
 	s.order.BrokerId = brokerId
 	return s
 }
 
-// AttachAlgoOrders устанавливает прикрепленные TP/SL ордера
+// AttachAlgoOrders sets attached TP/SL orders
 func (s *PlaceAlgoOrderService) AttachAlgoOrders(orders []AttachAlgoOrder) *PlaceAlgoOrderService {
 	s.order.AttachAlgoOrders = orders
 	return s
 }
 
-// Do выполняет запрос
+// Do executes request
 func (s *PlaceAlgoOrderService) Do(ctx context.Context) (*PlaceAlgoOrderResponse, error) {
 	if s.order.InstID == "" {
 		return nil, fmt.Errorf("instId required")
@@ -1159,36 +1174,36 @@ func (s *PlaceAlgoOrderService) Do(ctx context.Context) (*PlaceAlgoOrderResponse
 	return &result, nil
 }
 
-// CancelOrderService сервис для отмены ордера
+// CancelOrderService service for canceling order
 type CancelOrderService struct {
 	c     *RestClient
 	order CancelOrderRequest
 }
 
-// NewCancelOrderService создает новый сервис
+// NewCancelOrderService creates a new service
 func (c *RestClient) NewCancelOrderService() *CancelOrderService {
 	return &CancelOrderService{c: c}
 }
 
-// InstId устанавливает ID инструмента
+// InstId sets instrument ID
 func (s *CancelOrderService) InstId(instId string) *CancelOrderService {
 	s.order.InstID = instId
 	return s
 }
 
-// OrderId устанавливает ID ордера
+// OrderId sets order ID
 func (s *CancelOrderService) OrderId(orderId string) *CancelOrderService {
 	s.order.OrderId = orderId
 	return s
 }
 
-// ClientOrderId устанавливает ID ордера клиента
+// ClientOrderId sets client order ID
 func (s *CancelOrderService) ClientOrderId(clientOrderId string) *CancelOrderService {
 	s.order.ClientOrderId = clientOrderId
 	return s
 }
 
-// Do выполняет запрос
+// Do executes request
 func (s *CancelOrderService) Do(ctx context.Context) (*CancelOrderResponse, error) {
 	if s.order.OrderId == "" && s.order.ClientOrderId == "" {
 		return nil, fmt.Errorf("either orderId or clientOrderId required")
@@ -1214,30 +1229,30 @@ func (s *CancelOrderService) Do(ctx context.Context) (*CancelOrderResponse, erro
 	return &result, nil
 }
 
-// CancelBatchOrdersService сервис для отмены нескольких ордеров
+// CancelBatchOrdersService service for canceling multiple orders
 type CancelBatchOrdersService struct {
 	c      *RestClient
 	orders []CancelOrderRequest
 }
 
-// NewCancelBatchOrdersService создает новый сервис
+// NewCancelBatchOrdersService creates a new service
 func (c *RestClient) NewCancelBatchOrdersService() *CancelBatchOrdersService {
 	return &CancelBatchOrdersService{c: c}
 }
 
-// Orders устанавливает список ордеров для отмены
+// Orders sets list of orders to cancel
 func (s *CancelBatchOrdersService) Orders(orders []CancelOrderRequest) *CancelBatchOrdersService {
 	s.orders = orders
 	return s
 }
 
-// AddOrder добавляет ордер в список для отмены
+// AddOrder adds order to list to cancel
 func (s *CancelBatchOrdersService) AddOrder(order CancelOrderRequest) *CancelBatchOrdersService {
 	s.orders = append(s.orders, order)
 	return s
 }
 
-// Do выполняет запрос
+// Do executes request
 func (s *CancelBatchOrdersService) Do(ctx context.Context) (*CancelBatchOrdersResponse, error) {
 	if len(s.orders) == 0 {
 		return nil, fmt.Errorf("at least one order required")
@@ -1246,7 +1261,7 @@ func (s *CancelBatchOrdersService) Do(ctx context.Context) (*CancelBatchOrdersRe
 		return nil, fmt.Errorf("too many orders (max 20)")
 	}
 
-	// Проверяем, что все ордера для одного инструмента
+	// Check that all orders are for the same instrument
 	firstInstId := s.orders[0].InstID
 	for _, order := range s.orders[1:] {
 		if order.InstID != firstInstId {
@@ -1254,7 +1269,7 @@ func (s *CancelBatchOrdersService) Do(ctx context.Context) (*CancelBatchOrdersRe
 		}
 	}
 
-	// Проверяем обязательные параметры для каждого ордера
+	// Check that all orders have required parameters
 	for i, order := range s.orders {
 		if order.OrderId == "" && order.ClientOrderId == "" {
 			return nil, fmt.Errorf("order %d: either orderId or clientOrderId required", i)
@@ -1281,30 +1296,30 @@ func (s *CancelBatchOrdersService) Do(ctx context.Context) (*CancelBatchOrdersRe
 	return &result, nil
 }
 
-// CancelTPSLOrderService сервис для отмены TPSL ордеров
+// CancelTPSLOrderService service for canceling TPSL orders
 type CancelTPSLOrderService struct {
 	c      *RestClient
 	orders []CancelTPSLOrderRequest
 }
 
-// NewCancelTPSLOrderService создает новый сервис
+// NewCancelTPSLOrderService creates a new service
 func (c *RestClient) NewCancelTPSLOrderService() *CancelTPSLOrderService {
 	return &CancelTPSLOrderService{c: c}
 }
 
-// Orders устанавливает список ордеров для отмены
+// Orders sets list of orders to cancel
 func (s *CancelTPSLOrderService) Orders(orders []CancelTPSLOrderRequest) *CancelTPSLOrderService {
 	s.orders = orders
 	return s
 }
 
-// AddOrder добавляет ордер в список для отмены
+// AddOrder adds order to list to cancel
 func (s *CancelTPSLOrderService) AddOrder(order CancelTPSLOrderRequest) *CancelTPSLOrderService {
 	s.orders = append(s.orders, order)
 	return s
 }
 
-// Do выполняет запрос
+// Do executes request
 func (s *CancelTPSLOrderService) Do(ctx context.Context) (*CancelTPSLOrderResponse, error) {
 	if len(s.orders) == 0 {
 		return nil, fmt.Errorf("at least one order required")
@@ -1313,7 +1328,7 @@ func (s *CancelTPSLOrderService) Do(ctx context.Context) (*CancelTPSLOrderRespon
 		return nil, fmt.Errorf("too many orders (max 20)")
 	}
 
-	// Проверяем, что все ордера для одного инструмента
+	// Check that all orders are for the same instrument
 	firstInstId := s.orders[0].InstID
 	for _, order := range s.orders[1:] {
 		if order.InstID != firstInstId {
@@ -1321,7 +1336,7 @@ func (s *CancelTPSLOrderService) Do(ctx context.Context) (*CancelTPSLOrderRespon
 		}
 	}
 
-	// Проверяем обязательные параметры для каждого ордера
+	// Check that all orders have required parameters
 	for i, order := range s.orders {
 		if order.TpslId == "" && order.ClientOrderId == "" {
 			return nil, fmt.Errorf("order %d: either tpslId or clientOrderId required", i)
@@ -1348,36 +1363,36 @@ func (s *CancelTPSLOrderService) Do(ctx context.Context) (*CancelTPSLOrderRespon
 	return &result, nil
 }
 
-// CancelAlgoOrderService сервис для отмены алго-ордера
+// CancelAlgoOrderService service for canceling algo order
 type CancelAlgoOrderService struct {
 	c     *RestClient
 	order CancelAlgoOrderRequest
 }
 
-// NewCancelAlgoOrderService создает новый сервис
+// NewCancelAlgoOrderService creates a new service
 func (c *RestClient) NewCancelAlgoOrderService() *CancelAlgoOrderService {
 	return &CancelAlgoOrderService{c: c}
 }
 
-// InstId устанавливает ID инструмента
+// InstId sets instrument ID
 func (s *CancelAlgoOrderService) InstId(instId string) *CancelAlgoOrderService {
 	s.order.InstID = instId
 	return s
 }
 
-// AlgoId устанавливает ID алго-ордера
+// AlgoId sets algo order ID
 func (s *CancelAlgoOrderService) AlgoId(algoId string) *CancelAlgoOrderService {
 	s.order.AlgoId = algoId
 	return s
 }
 
-// ClientOrderId устанавливает ID ордера клиента
+// ClientOrderId sets client order ID
 func (s *CancelAlgoOrderService) ClientOrderId(clientOrderId string) *CancelAlgoOrderService {
 	s.order.ClientOrderId = clientOrderId
 	return s
 }
 
-// Do выполняет запрос
+// Do executes request
 func (s *CancelAlgoOrderService) Do(ctx context.Context) (*CancelAlgoOrderResponse, error) {
 	if s.order.AlgoId == "" && s.order.ClientOrderId == "" {
 		return nil, fmt.Errorf("either algoId or clientOrderId required")
@@ -1403,7 +1418,7 @@ func (s *CancelAlgoOrderService) Do(ctx context.Context) (*CancelAlgoOrderRespon
 	return &result, nil
 }
 
-// GetPendingOrdersService сервис для получения активных ордеров
+// GetPendingOrdersService service for getting active orders
 type GetPendingOrdersService struct {
 	c         *RestClient
 	instId    string
@@ -1414,48 +1429,48 @@ type GetPendingOrdersService struct {
 	limit     string
 }
 
-// NewGetPendingOrdersService создает новый сервис
+// NewGetPendingOrdersService creates a new service
 func (c *RestClient) NewGetPendingOrdersService() *GetPendingOrdersService {
 	return &GetPendingOrdersService{c: c}
 }
 
-// InstId устанавливает ID инструмента
+// InstId sets instrument ID
 func (s *GetPendingOrdersService) InstId(instId string) *GetPendingOrdersService {
 	s.instId = instId
 	return s
 }
 
-// OrderType устанавливает тип ордера
+// OrderType sets order type
 func (s *GetPendingOrdersService) OrderType(orderType string) *GetPendingOrdersService {
 	s.orderType = orderType
 	return s
 }
 
-// State устанавливает состояние ордера
+// State sets order state
 func (s *GetPendingOrdersService) State(state string) *GetPendingOrdersService {
 	s.state = state
 	return s
 }
 
-// After устанавливает параметр after для пагинации
+// After sets after parameter for pagination
 func (s *GetPendingOrdersService) After(after string) *GetPendingOrdersService {
 	s.after = after
 	return s
 }
 
-// Before устанавливает параметр before для пагинации
+// Before sets before parameter for pagination
 func (s *GetPendingOrdersService) Before(before string) *GetPendingOrdersService {
 	s.before = before
 	return s
 }
 
-// Limit устанавливает лимит результатов
+// Limit sets limit results
 func (s *GetPendingOrdersService) Limit(limit string) *GetPendingOrdersService {
 	s.limit = limit
 	return s
 }
 
-// Do выполняет запрос
+// Do executes request
 func (s *GetPendingOrdersService) Do(ctx context.Context) (*GetPendingOrdersResponse, error) {
 	endpoint := "/api/v1/trade/orders-pending"
 	params := make(map[string]string)
@@ -1497,7 +1512,7 @@ func (s *GetPendingOrdersService) Do(ctx context.Context) (*GetPendingOrdersResp
 	return &result, nil
 }
 
-// GetPendingTPSLOrdersService сервис для получения активных TPSL ордеров
+// GetPendingTPSLOrdersService service for getting active TPSL orders
 type GetPendingTPSLOrdersService struct {
 	c             *RestClient
 	instId        string
@@ -1508,48 +1523,48 @@ type GetPendingTPSLOrdersService struct {
 	limit         string
 }
 
-// NewGetPendingTPSLOrdersService создает новый сервис
+// NewGetPendingTPSLOrdersService creates a new service
 func (c *RestClient) NewGetPendingTPSLOrdersService() *GetPendingTPSLOrdersService {
 	return &GetPendingTPSLOrdersService{c: c}
 }
 
-// InstId устанавливает ID инструмента
+// InstId sets instrument ID
 func (s *GetPendingTPSLOrdersService) InstId(instId string) *GetPendingTPSLOrdersService {
 	s.instId = instId
 	return s
 }
 
-// TpslId устанавливает ID TPSL ордера
+// TpslId sets TPSL order ID
 func (s *GetPendingTPSLOrdersService) TpslId(tpslId string) *GetPendingTPSLOrdersService {
 	s.tpslId = tpslId
 	return s
 }
 
-// ClientOrderId устанавливает ID ордера клиента
+// ClientOrderId sets client order ID
 func (s *GetPendingTPSLOrdersService) ClientOrderId(clientOrderId string) *GetPendingTPSLOrdersService {
 	s.clientOrderId = clientOrderId
 	return s
 }
 
-// After устанавливает параметр after для пагинации
+// After sets after parameter for pagination
 func (s *GetPendingTPSLOrdersService) After(after string) *GetPendingTPSLOrdersService {
 	s.after = after
 	return s
 }
 
-// Before устанавливает параметр before для пагинации
+// Before sets before parameter for pagination
 func (s *GetPendingTPSLOrdersService) Before(before string) *GetPendingTPSLOrdersService {
 	s.before = before
 	return s
 }
 
-// Limit устанавливает лимит результатов
+// Limit sets limit results
 func (s *GetPendingTPSLOrdersService) Limit(limit string) *GetPendingTPSLOrdersService {
 	s.limit = limit
 	return s
 }
 
-// Do выполняет запрос
+// Do executes request
 func (s *GetPendingTPSLOrdersService) Do(ctx context.Context) (*GetPendingTPSLOrdersResponse, error) {
 	endpoint := "/api/v1/trade/orders-tpsl-pending"
 	params := make(map[string]string)
@@ -1591,7 +1606,7 @@ func (s *GetPendingTPSLOrdersService) Do(ctx context.Context) (*GetPendingTPSLOr
 	return &result, nil
 }
 
-// GetPendingAlgoOrdersService сервис для получения активных алго-ордеров
+// GetPendingAlgoOrdersService service for getting active algo orders
 type GetPendingAlgoOrdersService struct {
 	c             *RestClient
 	instId        string
@@ -1603,54 +1618,54 @@ type GetPendingAlgoOrdersService struct {
 	limit         string
 }
 
-// NewGetPendingAlgoOrdersService создает новый сервис
+// NewGetPendingAlgoOrdersService creates a new service
 func (c *RestClient) NewGetPendingAlgoOrdersService() *GetPendingAlgoOrdersService {
 	return &GetPendingAlgoOrdersService{c: c}
 }
 
-// InstId устанавливает ID инструмента
+// InstId sets instrument ID
 func (s *GetPendingAlgoOrdersService) InstId(instId string) *GetPendingAlgoOrdersService {
 	s.instId = instId
 	return s
 }
 
-// AlgoId устанавливает ID алго-ордера
+// AlgoId sets algo order ID
 func (s *GetPendingAlgoOrdersService) AlgoId(algoId string) *GetPendingAlgoOrdersService {
 	s.algoId = algoId
 	return s
 }
 
-// ClientOrderId устанавливает ID ордера клиента
+// ClientOrderId sets client order ID
 func (s *GetPendingAlgoOrdersService) ClientOrderId(clientOrderId string) *GetPendingAlgoOrdersService {
 	s.clientOrderId = clientOrderId
 	return s
 }
 
-// OrderType устанавливает тип алго-ордера
+// OrderType sets order type
 func (s *GetPendingAlgoOrdersService) OrderType(orderType string) *GetPendingAlgoOrdersService {
 	s.orderType = orderType
 	return s
 }
 
-// After устанавливает параметр after для пагинации
+// After sets after parameter for pagination
 func (s *GetPendingAlgoOrdersService) After(after string) *GetPendingAlgoOrdersService {
 	s.after = after
 	return s
 }
 
-// Before устанавливает параметр before для пагинации
+// Before sets before parameter for pagination
 func (s *GetPendingAlgoOrdersService) Before(before string) *GetPendingAlgoOrdersService {
 	s.before = before
 	return s
 }
 
-// Limit устанавливает лимит результатов
+// Limit sets limit results
 func (s *GetPendingAlgoOrdersService) Limit(limit string) *GetPendingAlgoOrdersService {
 	s.limit = limit
 	return s
 }
 
-// Do выполняет запрос
+// Do executes request
 func (s *GetPendingAlgoOrdersService) Do(ctx context.Context) (*GetPendingAlgoOrdersResponse, error) {
 	if s.orderType == "" {
 		return nil, fmt.Errorf("orderType required")
@@ -1702,48 +1717,48 @@ func (s *GetPendingAlgoOrdersService) Do(ctx context.Context) (*GetPendingAlgoOr
 	return &result, nil
 }
 
-// ClosePositionService сервис для закрытия позиции
+// ClosePositionService service for closing position
 type ClosePositionService struct {
 	c     *RestClient
 	order ClosePositionRequest
 }
 
-// NewClosePositionService создает новый сервис
+// NewClosePositionService creates a new service
 func (c *RestClient) NewClosePositionService() *ClosePositionService {
 	return &ClosePositionService{c: c}
 }
 
-// InstId устанавливает ID инструмента
+// InstId sets instrument ID
 func (s *ClosePositionService) InstId(instId string) *ClosePositionService {
 	s.order.InstID = instId
 	return s
 }
 
-// MarginMode устанавливает режим маржи
+// MarginMode sets margin mode
 func (s *ClosePositionService) MarginMode(marginMode string) *ClosePositionService {
 	s.order.MarginMode = marginMode
 	return s
 }
 
-// PositionSide устанавливает сторону позиции
+// PositionSide sets position side
 func (s *ClosePositionService) PositionSide(positionSide string) *ClosePositionService {
 	s.order.PositionSide = positionSide
 	return s
 }
 
-// ClientOrderId устанавливает ID ордера клиента
+// ClientOrderId sets client order ID
 func (s *ClosePositionService) ClientOrderId(clientOrderId string) *ClosePositionService {
 	s.order.ClientOrderId = clientOrderId
 	return s
 }
 
-// BrokerId устанавливает ID брокера
+// BrokerId sets broker ID
 func (s *ClosePositionService) BrokerId(brokerId string) *ClosePositionService {
 	s.order.BrokerId = brokerId
 	return s
 }
 
-// Do выполняет запрос
+// Do executes request
 func (s *ClosePositionService) Do(ctx context.Context) (*ClosePositionResponse, error) {
 	if s.order.InstID == "" {
 		return nil, fmt.Errorf("instId required")
@@ -1775,7 +1790,7 @@ func (s *ClosePositionService) Do(ctx context.Context) (*ClosePositionResponse, 
 	return &result, nil
 }
 
-// GetOrderHistoryService сервис для получения истории ордеров
+// GetOrderHistoryService service for getting order history
 type GetOrderHistoryService struct {
 	c         *RestClient
 	instId    string
@@ -1788,60 +1803,60 @@ type GetOrderHistoryService struct {
 	limit     string
 }
 
-// NewGetOrderHistoryService создает новый сервис
+// NewGetOrderHistoryService creates a new service
 func (c *RestClient) NewGetOrderHistoryService() *GetOrderHistoryService {
 	return &GetOrderHistoryService{c: c}
 }
 
-// InstId устанавливает ID инструмента
+// InstId sets instrument ID
 func (s *GetOrderHistoryService) InstId(instId string) *GetOrderHistoryService {
 	s.instId = instId
 	return s
 }
 
-// OrderType устанавливает тип ордера
+// OrderType sets order type
 func (s *GetOrderHistoryService) OrderType(orderType string) *GetOrderHistoryService {
 	s.orderType = orderType
 	return s
 }
 
-// State устанавливает состояние ордера
+// State sets order state
 func (s *GetOrderHistoryService) State(state string) *GetOrderHistoryService {
 	s.state = state
 	return s
 }
 
-// After устанавливает параметр after для пагинации
+// After sets after parameter for pagination
 func (s *GetOrderHistoryService) After(after string) *GetOrderHistoryService {
 	s.after = after
 	return s
 }
 
-// Before устанавливает параметр before для пагинации
+// Before sets before parameter for pagination
 func (s *GetOrderHistoryService) Before(before string) *GetOrderHistoryService {
 	s.before = before
 	return s
 }
 
-// Begin устанавливает начальное время для фильтрации
+// Begin sets start time for filtering
 func (s *GetOrderHistoryService) Begin(begin string) *GetOrderHistoryService {
 	s.begin = begin
 	return s
 }
 
-// End устанавливает конечное время для фильтрации
+// End sets end time for filtering
 func (s *GetOrderHistoryService) End(end string) *GetOrderHistoryService {
 	s.end = end
 	return s
 }
 
-// Limit устанавливает лимит результатов
+// Limit sets limit results
 func (s *GetOrderHistoryService) Limit(limit string) *GetOrderHistoryService {
 	s.limit = limit
 	return s
 }
 
-// Do выполняет запрос
+// Do executes request
 func (s *GetOrderHistoryService) Do(ctx context.Context) (*GetOrderHistoryResponse, error) {
 	if s.after != "" && s.before != "" {
 		return nil, fmt.Errorf("after and before cannot be used simultaneously")
@@ -1893,7 +1908,7 @@ func (s *GetOrderHistoryService) Do(ctx context.Context) (*GetOrderHistoryRespon
 	return &result, nil
 }
 
-// GetTPSLOrderHistoryService сервис для получения истории TPSL ордеров
+// GetTPSLOrderHistoryService service for getting TPSL order history
 type GetTPSLOrderHistoryService struct {
 	c             *RestClient
 	instId        string
@@ -1905,54 +1920,54 @@ type GetTPSLOrderHistoryService struct {
 	limit         string
 }
 
-// NewGetTPSLOrderHistoryService создает новый сервис
+// NewGetTPSLOrderHistoryService creates a new service
 func (c *RestClient) NewGetTPSLOrderHistoryService() *GetTPSLOrderHistoryService {
 	return &GetTPSLOrderHistoryService{c: c}
 }
 
-// InstId устанавливает ID инструмента
+// InstId sets instrument ID
 func (s *GetTPSLOrderHistoryService) InstId(instId string) *GetTPSLOrderHistoryService {
 	s.instId = instId
 	return s
 }
 
-// TpslId устанавливает ID TPSL ордера
+// TpslId sets TPSL order ID
 func (s *GetTPSLOrderHistoryService) TpslId(tpslId string) *GetTPSLOrderHistoryService {
 	s.tpslId = tpslId
 	return s
 }
 
-// ClientOrderId устанавливает ID ордера клиента
+// ClientOrderId sets client order ID
 func (s *GetTPSLOrderHistoryService) ClientOrderId(clientOrderId string) *GetTPSLOrderHistoryService {
 	s.clientOrderId = clientOrderId
 	return s
 }
 
-// State устанавливает состояние ордера
+// State sets order state
 func (s *GetTPSLOrderHistoryService) State(state string) *GetTPSLOrderHistoryService {
 	s.state = state
 	return s
 }
 
-// After устанавливает параметр after для пагинации
+// After sets after parameter for pagination
 func (s *GetTPSLOrderHistoryService) After(after string) *GetTPSLOrderHistoryService {
 	s.after = after
 	return s
 }
 
-// Before устанавливает параметр before для пагинации
+// Before sets before parameter for pagination
 func (s *GetTPSLOrderHistoryService) Before(before string) *GetTPSLOrderHistoryService {
 	s.before = before
 	return s
 }
 
-// Limit устанавливает лимит результатов
+// Limit sets limit results
 func (s *GetTPSLOrderHistoryService) Limit(limit string) *GetTPSLOrderHistoryService {
 	s.limit = limit
 	return s
 }
 
-// Do выполняет запрос
+// Do executes request
 func (s *GetTPSLOrderHistoryService) Do(ctx context.Context) (*GetTPSLOrderHistoryResponse, error) {
 	if s.after != "" && s.before != "" {
 		return nil, fmt.Errorf("after and before cannot be used simultaneously")
@@ -2001,7 +2016,7 @@ func (s *GetTPSLOrderHistoryService) Do(ctx context.Context) (*GetTPSLOrderHisto
 	return &result, nil
 }
 
-// GetAlgoOrderHistoryService сервис для получения истории алго-ордеров
+// GetAlgoOrderHistoryService service for getting algo order history
 type GetAlgoOrderHistoryService struct {
 	c             *RestClient
 	instId        string
@@ -2014,60 +2029,60 @@ type GetAlgoOrderHistoryService struct {
 	orderType     string
 }
 
-// NewGetAlgoOrderHistoryService создает новый сервис
+// NewGetAlgoOrderHistoryService creates a new service
 func (c *RestClient) NewGetAlgoOrderHistoryService() *GetAlgoOrderHistoryService {
 	return &GetAlgoOrderHistoryService{c: c}
 }
 
-// InstId устанавливает ID инструмента
+// InstId sets instrument ID
 func (s *GetAlgoOrderHistoryService) InstId(instId string) *GetAlgoOrderHistoryService {
 	s.instId = instId
 	return s
 }
 
-// AlgoId устанавливает ID алго-ордера
+// AlgoId sets algo order ID
 func (s *GetAlgoOrderHistoryService) AlgoId(algoId string) *GetAlgoOrderHistoryService {
 	s.algoId = algoId
 	return s
 }
 
-// ClientOrderId устанавливает ID ордера клиента
+// ClientOrderId sets client order ID
 func (s *GetAlgoOrderHistoryService) ClientOrderId(clientOrderId string) *GetAlgoOrderHistoryService {
 	s.clientOrderId = clientOrderId
 	return s
 }
 
-// State устанавливает состояние ордера
+// State sets order state
 func (s *GetAlgoOrderHistoryService) State(state string) *GetAlgoOrderHistoryService {
 	s.state = state
 	return s
 }
 
-// After устанавливает параметр after для пагинации
+// After sets after parameter for pagination
 func (s *GetAlgoOrderHistoryService) After(after string) *GetAlgoOrderHistoryService {
 	s.after = after
 	return s
 }
 
-// Before устанавливает параметр before для пагинации
+// Before sets before parameter for pagination
 func (s *GetAlgoOrderHistoryService) Before(before string) *GetAlgoOrderHistoryService {
 	s.before = before
 	return s
 }
 
-// Limit устанавливает лимит результатов
+// Limit sets limit results
 func (s *GetAlgoOrderHistoryService) Limit(limit string) *GetAlgoOrderHistoryService {
 	s.limit = limit
 	return s
 }
 
-// OrderType устанавливает тип алго-ордера
+// OrderType sets algo order type
 func (s *GetAlgoOrderHistoryService) OrderType(orderType string) *GetAlgoOrderHistoryService {
 	s.orderType = orderType
 	return s
 }
 
-// Do выполняет запрос
+// Do executes request
 func (s *GetAlgoOrderHistoryService) Do(ctx context.Context) (*GetAlgoOrderHistoryResponse, error) {
 	if s.orderType == "" {
 		return nil, fmt.Errorf("orderType required")
@@ -2122,7 +2137,7 @@ func (s *GetAlgoOrderHistoryService) Do(ctx context.Context) (*GetAlgoOrderHisto
 	return &result, nil
 }
 
-// GetTradeHistoryService сервис для получения истории сделок
+// GetTradeHistoryService service for getting trade history
 type GetTradeHistoryService struct {
 	c       *RestClient
 	instId  string
@@ -2134,54 +2149,54 @@ type GetTradeHistoryService struct {
 	limit   string
 }
 
-// NewGetTradeHistoryService создает новый сервис
+// NewGetTradeHistoryService creates a new service
 func (c *RestClient) NewGetTradeHistoryService() *GetTradeHistoryService {
 	return &GetTradeHistoryService{c: c}
 }
 
-// InstId устанавливает ID инструмента
+// InstId sets instrument ID
 func (s *GetTradeHistoryService) InstId(instId string) *GetTradeHistoryService {
 	s.instId = instId
 	return s
 }
 
-// OrderId устанавливает ID ордера
+// OrderId sets order ID
 func (s *GetTradeHistoryService) OrderId(orderId string) *GetTradeHistoryService {
 	s.orderId = orderId
 	return s
 }
 
-// After устанавливает параметр after для пагинации
+// After sets after parameter for pagination
 func (s *GetTradeHistoryService) After(after string) *GetTradeHistoryService {
 	s.after = after
 	return s
 }
 
-// Before устанавливает параметр before для пагинации
+// Before sets before parameter for pagination
 func (s *GetTradeHistoryService) Before(before string) *GetTradeHistoryService {
 	s.before = before
 	return s
 }
 
-// Begin устанавливает начальное время для фильтрации
+// Begin sets start time for filtering
 func (s *GetTradeHistoryService) Begin(begin string) *GetTradeHistoryService {
 	s.begin = begin
 	return s
 }
 
-// End устанавливает конечное время для фильтрации
+// End sets end time for filtering
 func (s *GetTradeHistoryService) End(end string) *GetTradeHistoryService {
 	s.end = end
 	return s
 }
 
-// Limit устанавливает лимит результатов
+// Limit sets limit results
 func (s *GetTradeHistoryService) Limit(limit string) *GetTradeHistoryService {
 	s.limit = limit
 	return s
 }
 
-// Do выполняет запрос
+// Do executes request
 func (s *GetTradeHistoryService) Do(ctx context.Context) (*GetTradeHistoryResponse, error) {
 	if s.after != "" && s.before != "" {
 		return nil, fmt.Errorf("after and before cannot be used simultaneously")

@@ -11,7 +11,7 @@ import (
 	rest "github.com/mmavka/go-blofin/rest"
 )
 
-// LoginRequest для аутентификации
+// LoginRequest for authentication
 
 type LoginRequest struct {
 	Op   string      `json:"op"`
@@ -26,7 +26,7 @@ type LoginArgs struct {
 	Nonce      string `json:"nonce"`
 }
 
-// SubscribeRequest для подписки на каналы
+// SubscribeRequest for channel subscription
 
 type SubscribeRequest struct {
 	Op   string        `json:"op"`
@@ -38,14 +38,14 @@ type ChannelArgs struct {
 	InstId  string `json:"instId"`
 }
 
-// UnsubscribeRequest для отписки от каналов
+// UnsubscribeRequest for channel unsubscription
 
 type UnsubscribeRequest struct {
 	Op   string        `json:"op"`
 	Args []ChannelArgs `json:"args"`
 }
 
-// EventResponse для обработки событий login/subscribe/unsubscribe
+// EventResponse for handling login/subscribe/unsubscribe events
 
 type EventResponse struct {
 	Event string      `json:"event"`
@@ -54,7 +54,7 @@ type EventResponse struct {
 	Msg   string      `json:"msg"`
 }
 
-// TradeWS — данные о сделке из WS trades channel
+// TradeWS — trade data from WS trades channel
 
 type TradeWS struct {
 	InstID  string `json:"instId"`
@@ -70,7 +70,7 @@ type TradeWSMessage struct {
 	Data []TradeWS   `json:"data"`
 }
 
-// CandleWSMessage — push-сообщение для канала свечей
+// CandleWSMessage — push message for candles channel
 
 type CandleWSMessage struct {
 	Arg  ChannelArgs `json:"arg"`
@@ -79,7 +79,7 @@ type CandleWSMessage struct {
 
 type Candle = rest.Candle
 
-// OrderBookWSData — данные стакана из WS order book channel
+// OrderBookWSData — order book data from WS order book channel
 
 type OrderBookWSData struct {
 	Asks      [][]string `json:"asks"`
@@ -89,7 +89,7 @@ type OrderBookWSData struct {
 	SeqId     string     `json:"seqId"`
 }
 
-// OrderBookWSMessage — push-сообщение для канала стакана
+// OrderBookWSMessage — push message for order book channel
 
 type OrderBookWSMessage struct {
 	Arg    ChannelArgs     `json:"arg"`
@@ -97,7 +97,7 @@ type OrderBookWSMessage struct {
 	Data   OrderBookWSData `json:"data"`
 }
 
-// TickerWS — данные тикера из WS tickers channel
+// TickerWS — ticker data from WS tickers channel
 
 type TickerWS struct {
 	InstID         string `json:"instId"`
@@ -120,7 +120,7 @@ type TickerWSMessage struct {
 	Data []TickerWS  `json:"data"`
 }
 
-// FundingRateWS — данные funding rate из WS funding-rate channel
+// FundingRateWS — funding rate data from WS funding-rate channel
 
 type FundingRateWS struct {
 	InstID      string `json:"instId"`

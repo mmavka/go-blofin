@@ -19,7 +19,7 @@ var (
 		WriteBufferSize: 1024,
 	}
 
-	// Тестовые интервалы
+	// Test intervals
 	testPingInterval = 100 * time.Millisecond
 	testPongTimeout  = 50 * time.Millisecond
 )
@@ -88,17 +88,17 @@ func TestPingPong(t *testing.T) {
 		t.Logf("Error handler called: %v", err)
 	})
 
-	// Используем тестовые интервалы
+	// Using test intervals
 	client.pingTimer = time.NewTimer(testPingInterval)
 	client.pongTimer = time.NewTimer(testPongTimeout)
 
 	err := client.Connect()
 	assert.NoError(t, err)
 
-	// Ждем несколько ping/pong циклов
+	// Wait for several ping/pong cycles
 	time.Sleep(350 * time.Millisecond)
 
-	// Проверяем, что соединение живо
+	// Check that connection is alive
 	assert.NotNil(t, client.conn)
 	assert.False(t, client.reconnecting)
 }
@@ -118,13 +118,13 @@ func TestReconnect(t *testing.T) {
 	err := client.Connect()
 	assert.NoError(t, err)
 
-	// Имитируем разрыв соединения
+	// Simulate connection break
 	ts.conn.Close()
 
-	// Ждем переподключения
+	// Wait for reconnection
 	select {
 	case <-reconnected:
-		// Успешно
+		// Success
 	case <-time.After(2 * time.Second):
 		t.Fatal("Reconnect timeout")
 	}
@@ -139,15 +139,15 @@ func TestConnectionLimit(t *testing.T) {
 
 	client := NewClient(ts.URL())
 
-	// Делаем несколько быстрых подключений с задержкой
+	// Make several quick connections with delay
 	for i := 0; i < 3; i++ {
 		err := client.Connect()
 		assert.NoError(t, err)
-		ts.conn.Close()            // Имитируем разрыв
-		time.Sleep(reconnectDelay) // Ждем перед следующим подключением
+		ts.conn.Close()            // Simulate break
+		time.Sleep(reconnectDelay) // Wait before next connection
 	}
 
-	// Проверяем, что все подключения были успешны
+	// Check that all connections were successful
 	assert.Equal(t, 3, ts.connectCount)
 }
 
@@ -157,14 +157,14 @@ func TestStateRecovery(t *testing.T) {
 
 	client := NewClient(ts.URL())
 
-	// Подключаемся и авторизуемся
+	// Connect and authenticate
 	err := client.Connect()
 	assert.NoError(t, err)
 
 	err = client.Login("test-key", "test-secret", "test-pass")
 	assert.NoError(t, err)
 
-	// Подписываемся на каналы
+	// Subscribe to channels
 	channels := []ChannelArgs{
 		{Channel: "trades", InstId: "BTC-USDT"},
 		{Channel: "tickers", InstId: "ETH-USDT"},
@@ -172,13 +172,13 @@ func TestStateRecovery(t *testing.T) {
 	err = client.Subscribe(channels)
 	assert.NoError(t, err)
 
-	// Имитируем разрыв и переподключение
+	// Simulate break and reconnection
 	ts.conn.Close()
 
-	// Ждем переподключения
+	// Wait for reconnection
 	time.Sleep(2 * time.Second)
 
-	// Проверяем восстановление состояния
+	// Check state recovery
 	assert.True(t, client.isLoggedIn)
 	assert.Equal(t, len(channels), len(client.subscriptions))
 	assert.NotNil(t, client.credentials)
@@ -198,10 +198,10 @@ func TestErrorHandling(t *testing.T) {
 	err := client.Connect()
 	assert.NoError(t, err)
 
-	// Имитируем ошибку ping/pong
+	// Simulate ping/pong error
 	ts.conn.Close()
 
-	// Ждем обработки ошибки
+	// Wait for error handling
 	select {
 	case err := <-errors:
 		assert.NotNil(t, err)
@@ -211,7 +211,7 @@ func TestErrorHandling(t *testing.T) {
 }
 
 func TestWSClientBasic(t *testing.T) {
-	// TODO: реализовать тесты для login, subscribe, маршрутизации сообщений с использованием мок-соединения
+	// TODO: implement tests for login, subscribe, message routing using mock connection
 }
 
 func TestWSClientPing(t *testing.T) {
@@ -262,7 +262,7 @@ func TestWSClientSubscribe(t *testing.T) {
 			t.Fatalf("read error: %v", err)
 		}
 		ch <- msg
-		// не отвечаем, просто завершаем
+		// no response, just finish
 	}))
 	defer server.Close()
 
@@ -298,11 +298,11 @@ func TestWSClientPushTrades(t *testing.T) {
 			t.Fatalf("upgrade error: %v", err)
 		}
 		defer conn.Close()
-		// Ждём подписки, затем отправляем push trades
+		// Wait for subscription, then send push trades
 		_, _, _ = conn.ReadMessage()
 		push := `{"arg":{"channel":"trades","instId":"BTC-USDT"},"data":[{"tradeId":"1","price":"100","size":"0.1","side":"buy","ts":"123456"}]}`
 		conn.WriteMessage(websocket.TextMessage, []byte(push))
-		// ждём немного, чтобы клиент успел обработать
+		// wait a bit for client to process
 		time.Sleep(100 * time.Millisecond)
 	}))
 	defer server.Close()
@@ -339,11 +339,11 @@ func TestWSClientPushCandles(t *testing.T) {
 			t.Fatalf("upgrade error: %v", err)
 		}
 		defer conn.Close()
-		// Ждём подписки, затем отправляем push candles
+		// Wait for subscription, then send push candles
 		_, _, _ = conn.ReadMessage()
 		push := `{"arg":{"channel":"candle1m","instId":"BTC-USDT"},"data":[["123456","100","110","90","105","10","1000","1000","1"]]}`
 		conn.WriteMessage(websocket.TextMessage, []byte(push))
-		// ждём немного, чтобы клиент успел обработать
+		// wait a bit for client to process
 		time.Sleep(100 * time.Millisecond)
 	}))
 	defer server.Close()
@@ -480,7 +480,7 @@ func TestWSClientErrorHandler(t *testing.T) {
 		if err != nil {
 			t.Fatalf("upgrade error: %v", err)
 		}
-		conn.Close() // сразу закрываем соединение, чтобы вызвать ошибку у клиента
+		conn.Close() // close connection immediately to trigger client error
 	}))
 	defer server.Close()
 
@@ -494,7 +494,7 @@ func TestWSClientErrorHandler(t *testing.T) {
 	client.SetErrorHandler(func(e error) {
 		ch <- e
 	})
-	// Ожидаем ошибку чтения
+	// Wait for read error
 	select {
 	case e := <-ch:
 		if e == nil {
@@ -516,7 +516,7 @@ func TestWSClientSubscribePrivateWithoutLogin(t *testing.T) {
 
 func TestWSClientSubscribeExceedsLimit(t *testing.T) {
 	client := NewDefaultClient()
-	// Создаём много каналов, чтобы превысить лимит
+	// Create many channels to exceed limit
 	channels := make([]ChannelArgs, 0, 500)
 	for i := 0; i < 500; i++ {
 		channels = append(channels, ChannelArgs{Channel: "trades", InstId: fmt.Sprintf("BTC-USDT-%d", i)})

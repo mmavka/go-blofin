@@ -6,7 +6,7 @@ import (
 )
 
 func TestWSModelUnmarshal(t *testing.T) {
-	// TODO: реализовать тесты для проверки сериализации/десериализации моделей WebSocket (например, TradeWS, CandleWSMessage и др.)
+	// TODO: implement tests for WebSocket models serialization/deserialization (e.g. TradeWS, CandleWSMessage etc.)
 	_ = json.Unmarshal
 }
 

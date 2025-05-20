@@ -46,7 +46,7 @@ func TestGetAccountBalanceService(t *testing.T) {
 		assert.Equal(t, "/api/v1/account/balance", r.URL.Path)
 		assert.Equal(t, "GET", r.Method)
 
-		// Проверяем заголовки аутентификации
+		// Check authentication headers
 		assert.NotEmpty(t, r.Header.Get("ACCESS-KEY"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-SIGN"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-TIMESTAMP"))
@@ -85,19 +85,19 @@ func TestGetAccountBalanceService(t *testing.T) {
 
 	client.SetBaseURL(server.URL)
 
-	// Выполняем запрос
+	// Execute request
 	balance, err := client.GetAccountBalance().Do(context.Background())
 	assert.NoError(t, err)
 	assert.NotNil(t, balance)
 
-	// Проверяем данные ответа
+	// Check response data
 	assert.Equal(t, "0", balance.Code)
 	assert.Equal(t, "success", balance.Msg)
 	assert.Equal(t, "1697021343571", balance.Data.Ts)
 	assert.Equal(t, "10011254.077985990315787910", balance.Data.TotalEquity)
 	assert.Equal(t, "861.763132108800000000", balance.Data.IsolatedEquity)
 
-	// Проверяем детали
+	// Check details
 	assert.Len(t, balance.Data.Details, 1)
 	detail := balance.Data.Details[0]
 	assert.Equal(t, "USDT", detail.Currency)
@@ -117,14 +117,14 @@ func TestGetPositionsService(t *testing.T) {
 		assert.Equal(t, "/api/v1/account/positions", r.URL.Path)
 		assert.Equal(t, "GET", r.Method)
 
-		// Проверяем заголовки аутентификации
+		// Check authentication headers
 		assert.NotEmpty(t, r.Header.Get("ACCESS-KEY"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-SIGN"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-TIMESTAMP"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-NONCE"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-PASSPHRASE"))
 
-		// Проверяем параметры запроса
+		// Check request parameters
 		instId := r.URL.Query().Get("instId")
 		if instId != "" {
 			assert.Equal(t, "BTC-USDT", instId)
@@ -164,12 +164,12 @@ func TestGetPositionsService(t *testing.T) {
 
 	client.SetBaseURL(server.URL)
 
-	// Тест без параметров
+	// Test without parameters
 	positions, err := client.GetPositions().Do(context.Background())
 	assert.NoError(t, err)
 	assert.NotNil(t, positions)
 
-	// Проверяем данные ответа
+	// Check response data
 	assert.Equal(t, "0", positions.Code)
 	assert.Equal(t, "success", positions.Msg)
 	assert.Len(t, positions.Data, 1)
@@ -183,7 +183,7 @@ func TestGetPositionsService(t *testing.T) {
 	assert.Equal(t, "-0.011", position.UnrealizedPnl)
 	assert.Equal(t, "3", position.Leverage)
 
-	// Тест с параметром instId
+	// Test with instId parameter
 	positions, err = client.GetPositions().InstId("BTC-USDT").Do(context.Background())
 	assert.NoError(t, err)
 	assert.NotNil(t, positions)
@@ -195,7 +195,7 @@ func TestGetMarginModeService(t *testing.T) {
 		assert.Equal(t, "/api/v1/account/margin-mode", r.URL.Path)
 		assert.Equal(t, "GET", r.Method)
 
-		// Проверяем заголовки аутентификации
+		// Check authentication headers
 		assert.NotEmpty(t, r.Header.Get("ACCESS-KEY"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-SIGN"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-TIMESTAMP"))
@@ -216,12 +216,12 @@ func TestGetMarginModeService(t *testing.T) {
 
 	client.SetBaseURL(server.URL)
 
-	// Выполняем запрос
+	// Execute request
 	marginMode, err := client.GetMarginMode().Do(context.Background())
 	assert.NoError(t, err)
 	assert.NotNil(t, marginMode)
 
-	// Проверяем данные ответа
+	// Check response data
 	assert.Equal(t, "0", marginMode.Code)
 	assert.Equal(t, "success", marginMode.Msg)
 	assert.Equal(t, MarginModeIsolated, marginMode.Data.MarginMode)
@@ -233,14 +233,14 @@ func TestSetMarginModeService(t *testing.T) {
 		assert.Equal(t, "/api/v1/account/set-margin-mode", r.URL.Path)
 		assert.Equal(t, "POST", r.Method)
 
-		// Проверяем заголовки аутентификации
+		// Check authentication headers
 		assert.NotEmpty(t, r.Header.Get("ACCESS-KEY"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-SIGN"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-TIMESTAMP"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-NONCE"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-PASSPHRASE"))
 
-		// Проверяем тело запроса
+		// Check request body
 		var req SetMarginModeRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		assert.NoError(t, err)
@@ -260,7 +260,7 @@ func TestSetMarginModeService(t *testing.T) {
 
 	client.SetBaseURL(server.URL)
 
-	// Тест успешного запроса
+	// Test success
 	marginMode, err := client.SetMarginMode().MarginMode(MarginModeIsolated).Do(context.Background())
 	assert.NoError(t, err)
 	assert.NotNil(t, marginMode)
@@ -268,7 +268,7 @@ func TestSetMarginModeService(t *testing.T) {
 	assert.Equal(t, "success", marginMode.Msg)
 	assert.Equal(t, MarginModeIsolated, marginMode.Data.MarginMode)
 
-	// Тест с пустым marginMode
+	// Test with empty marginMode
 	_, err = client.SetMarginMode().Do(context.Background())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "marginMode required")
@@ -280,7 +280,7 @@ func TestGetPositionModeService(t *testing.T) {
 		assert.Equal(t, "/api/v1/account/position-mode", r.URL.Path)
 		assert.Equal(t, "GET", r.Method)
 
-		// Проверяем заголовки аутентификации
+		// Check authentication headers
 		assert.NotEmpty(t, r.Header.Get("ACCESS-KEY"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-SIGN"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-TIMESTAMP"))
@@ -301,12 +301,12 @@ func TestGetPositionModeService(t *testing.T) {
 
 	client.SetBaseURL(server.URL)
 
-	// Выполняем запрос
+	// Execute request
 	positionMode, err := client.GetPositionMode().Do(context.Background())
 	assert.NoError(t, err)
 	assert.NotNil(t, positionMode)
 
-	// Проверяем данные ответа
+	// Check response data
 	assert.Equal(t, "0", positionMode.Code)
 	assert.Equal(t, "success", positionMode.Msg)
 	assert.Equal(t, PositionModeNet, positionMode.Data.PositionMode)
@@ -318,14 +318,14 @@ func TestSetPositionModeService(t *testing.T) {
 		assert.Equal(t, "/api/v1/account/set-position-mode", r.URL.Path)
 		assert.Equal(t, "POST", r.Method)
 
-		// Проверяем заголовки аутентификации
+		// Check authentication headers
 		assert.NotEmpty(t, r.Header.Get("ACCESS-KEY"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-SIGN"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-TIMESTAMP"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-NONCE"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-PASSPHRASE"))
 
-		// Проверяем тело запроса
+		// Check request body
 		var req SetPositionModeRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		assert.NoError(t, err)
@@ -345,7 +345,7 @@ func TestSetPositionModeService(t *testing.T) {
 
 	client.SetBaseURL(server.URL)
 
-	// Тест успешного запроса
+	// Test successful request
 	positionMode, err := client.SetPositionMode().PositionMode(PositionModeNet).Do(context.Background())
 	assert.NoError(t, err)
 	assert.NotNil(t, positionMode)
@@ -353,7 +353,7 @@ func TestSetPositionModeService(t *testing.T) {
 	assert.Equal(t, "success", positionMode.Msg)
 	assert.Equal(t, PositionModeNet, positionMode.Data.PositionMode)
 
-	// Тест с пустым positionMode
+	// Test with empty positionMode
 	_, err = client.SetPositionMode().Do(context.Background())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "positionMode required")
@@ -365,14 +365,14 @@ func TestGetLeverageInfoService(t *testing.T) {
 		assert.Equal(t, "/api/v1/account/leverage-info", r.URL.Path)
 		assert.Equal(t, "GET", r.Method)
 
-		// Проверяем заголовки аутентификации
+		// Check authentication headers
 		assert.NotEmpty(t, r.Header.Get("ACCESS-KEY"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-SIGN"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-TIMESTAMP"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-NONCE"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-PASSPHRASE"))
 
-		// Проверяем параметры запроса
+		// Check request parameters
 		assert.Equal(t, "BTC-USDT", r.URL.Query().Get("instId"))
 		assert.Equal(t, MarginModeCross, r.URL.Query().Get("marginMode"))
 
@@ -392,7 +392,7 @@ func TestGetLeverageInfoService(t *testing.T) {
 
 	client.SetBaseURL(server.URL)
 
-	// Тест успешного запроса
+	// Test successful request
 	leverage, err := client.GetLeverageInfo().
 		InstId("BTC-USDT").
 		MarginMode(MarginModeCross).
@@ -405,12 +405,12 @@ func TestGetLeverageInfoService(t *testing.T) {
 	assert.Equal(t, "3", leverage.Data.Leverage)
 	assert.Equal(t, MarginModeCross, leverage.Data.MarginMode)
 
-	// Тест с пустым instId
+	// Test with empty instId
 	_, err = client.GetLeverageInfo().MarginMode(MarginModeCross).Do(context.Background())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "instId required")
 
-	// Тест с пустым marginMode
+	// Test with empty marginMode
 	_, err = client.GetLeverageInfo().InstId("BTC-USDT").Do(context.Background())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "marginMode required")
@@ -422,14 +422,14 @@ func TestGetBatchLeverageInfoService(t *testing.T) {
 		assert.Equal(t, "/api/v1/account/batch-leverage-info", r.URL.Path)
 		assert.Equal(t, "GET", r.Method)
 
-		// Проверяем заголовки аутентификации
+		// Check authentication headers
 		assert.NotEmpty(t, r.Header.Get("ACCESS-KEY"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-SIGN"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-TIMESTAMP"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-NONCE"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-PASSPHRASE"))
 
-		// Проверяем параметры запроса
+		// Check request parameters
 		assert.Equal(t, "BTC-USDT,ETH-USDT", r.URL.Query().Get("instId"))
 		assert.Equal(t, MarginModeCross, r.URL.Query().Get("marginMode"))
 
@@ -458,7 +458,7 @@ func TestGetBatchLeverageInfoService(t *testing.T) {
 
 	client.SetBaseURL(server.URL)
 
-	// Тест успешного запроса
+	// Test successful request
 	leverage, err := client.NewGetBatchLeverageInfoService().
 		InstIds([]string{"BTC-USDT", "ETH-USDT"}).
 		MarginMode(MarginModeCross).
@@ -469,26 +469,26 @@ func TestGetBatchLeverageInfoService(t *testing.T) {
 	assert.Equal(t, "success", leverage.Msg)
 	assert.Len(t, leverage.Data, 2)
 
-	// Проверяем первый инструмент
+	// Check first instrument
 	assert.Equal(t, "BTC-USDT", leverage.Data[0].InstId)
 	assert.Equal(t, "50", leverage.Data[0].Leverage)
 	assert.Equal(t, MarginModeCross, leverage.Data[0].MarginMode)
 	assert.Equal(t, PositionSideNet, leverage.Data[0].PositionSide)
 
-	// Проверяем второй инструмент
+	// Check second instrument
 	assert.Equal(t, "ETH-USDT", leverage.Data[1].InstId)
 	assert.Equal(t, "3", leverage.Data[1].Leverage)
 	assert.Equal(t, MarginModeCross, leverage.Data[1].MarginMode)
 	assert.Equal(t, PositionSideNet, leverage.Data[1].PositionSide)
 
-	// Тест с пустым списком инструментов
+	// Test with empty list of instruments
 	_, err = client.NewGetBatchLeverageInfoService().
 		MarginMode(MarginModeCross).
 		Do(context.Background())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "instIds required")
 
-	// Тест с превышением лимита инструментов
+	// Test with exceeding instrument limit
 	instIds := make([]string, 21)
 	for i := range instIds {
 		instIds[i] = fmt.Sprintf("BTC-USDT-%d", i)
@@ -500,7 +500,7 @@ func TestGetBatchLeverageInfoService(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "too many instIds (max 20)")
 
-	// Тест с пустым marginMode
+	// Test with empty marginMode
 	_, err = client.NewGetBatchLeverageInfoService().
 		InstIds([]string{"BTC-USDT"}).
 		Do(context.Background())
@@ -514,14 +514,14 @@ func TestSetLeverageService(t *testing.T) {
 		assert.Equal(t, "/api/v1/account/set-leverage", r.URL.Path)
 		assert.Equal(t, "POST", r.Method)
 
-		// Проверяем заголовки аутентификации
+		// Check authentication headers
 		assert.NotEmpty(t, r.Header.Get("ACCESS-KEY"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-SIGN"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-TIMESTAMP"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-NONCE"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-PASSPHRASE"))
 
-		// Проверяем тело запроса
+		// Check request body
 		var req SetLeverageRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		assert.NoError(t, err)
@@ -547,7 +547,7 @@ func TestSetLeverageService(t *testing.T) {
 
 	client.SetBaseURL(server.URL)
 
-	// Тест успешного запроса
+	// Test successful request
 	leverage, err := client.NewSetLeverageService().
 		InstId("BTC-USDT").
 		Leverage("100").
@@ -563,7 +563,7 @@ func TestSetLeverageService(t *testing.T) {
 	assert.Equal(t, MarginModeCross, leverage.Data.MarginMode)
 	assert.Equal(t, PositionSideLong, leverage.Data.PositionSide)
 
-	// Тест с пустым instId
+	// Test with empty instId
 	_, err = client.NewSetLeverageService().
 		Leverage("100").
 		MarginMode(MarginModeCross).
@@ -571,7 +571,7 @@ func TestSetLeverageService(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "instId required")
 
-	// Тест с пустым leverage
+	// Test with empty leverage
 	_, err = client.NewSetLeverageService().
 		InstId("BTC-USDT").
 		MarginMode(MarginModeCross).
@@ -579,7 +579,7 @@ func TestSetLeverageService(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "leverage required")
 
-	// Тест с пустым marginMode
+	// Test with empty marginMode
 	_, err = client.NewSetLeverageService().
 		InstId("BTC-USDT").
 		Leverage("100").
@@ -594,14 +594,14 @@ func TestPlaceOrderService(t *testing.T) {
 		assert.Equal(t, "/api/v1/trade/order", r.URL.Path)
 		assert.Equal(t, "POST", r.Method)
 
-		// Проверяем заголовки аутентификации
+		// Check authentication headers
 		assert.NotEmpty(t, r.Header.Get("ACCESS-KEY"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-SIGN"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-TIMESTAMP"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-NONCE"))
 		assert.NotEmpty(t, r.Header.Get("ACCESS-PASSPHRASE"))
 
-		// Проверяем тело запроса
+		// Check request body
 		var req PlaceOrderRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		assert.NoError(t, err)
@@ -633,7 +633,7 @@ func TestPlaceOrderService(t *testing.T) {
 
 	client.SetBaseURL(server.URL)
 
-	// Тест успешного запроса
+	// Test successful request
 	order, err := client.NewPlaceOrderService().
 		InstId("BTC-USDT").
 		MarginMode(MarginModeCross).
@@ -654,7 +654,7 @@ func TestPlaceOrderService(t *testing.T) {
 	assert.Equal(t, "0", order.Data[0].Code)
 	assert.Equal(t, "", order.Data[0].Msg)
 
-	// Тест с пустым instId
+	// Test with empty instId
 	_, err = client.NewPlaceOrderService().
 		MarginMode(MarginModeCross).
 		PositionSide(PositionSideLong).
@@ -666,7 +666,7 @@ func TestPlaceOrderService(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "instId required")
 
-	// Тест с пустым marginMode
+	// Test with empty marginMode
 	_, err = client.NewPlaceOrderService().
 		InstId("BTC-USDT").
 		PositionSide(PositionSideLong).
@@ -678,7 +678,7 @@ func TestPlaceOrderService(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "marginMode required")
 
-	// Тест с пустым positionSide
+	// Test with empty positionSide
 	_, err = client.NewPlaceOrderService().
 		InstId("BTC-USDT").
 		MarginMode(MarginModeCross).
@@ -690,7 +690,7 @@ func TestPlaceOrderService(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "positionSide required")
 
-	// Тест с пустым side
+	// Test with empty side
 	_, err = client.NewPlaceOrderService().
 		InstId("BTC-USDT").
 		MarginMode(MarginModeCross).
@@ -702,7 +702,7 @@ func TestPlaceOrderService(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "side required")
 
-	// Тест с пустым orderType
+	// Test with empty orderType
 	_, err = client.NewPlaceOrderService().
 		InstId("BTC-USDT").
 		MarginMode(MarginModeCross).
@@ -714,7 +714,7 @@ func TestPlaceOrderService(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "orderType required")
 
-	// Тест с пустым size
+	// Test with empty size
 	_, err = client.NewPlaceOrderService().
 		InstId("BTC-USDT").
 		MarginMode(MarginModeCross).
@@ -726,7 +726,7 @@ func TestPlaceOrderService(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "size required")
 
-	// Тест с пустым price для лимитного ордера
+	// Test with empty price for limit order
 	_, err = client.NewPlaceOrderService().
 		InstId("BTC-USDT").
 		MarginMode(MarginModeCross).
@@ -873,14 +873,14 @@ func TestPlaceTPSLOrderService(t *testing.T) {
 			assert.Equal(t, "/api/v1/trade/order-tpsl", r.URL.Path)
 			assert.Equal(t, "POST", r.Method)
 
-			// Проверяем заголовки аутентификации
+			// Check authentication headers
 			assert.NotEmpty(t, r.Header.Get("ACCESS-KEY"))
 			assert.NotEmpty(t, r.Header.Get("ACCESS-SIGN"))
 			assert.NotEmpty(t, r.Header.Get("ACCESS-TIMESTAMP"))
 			assert.NotEmpty(t, r.Header.Get("ACCESS-NONCE"))
 			assert.NotEmpty(t, r.Header.Get("ACCESS-PASSPHRASE"))
 
-			// Проверяем тело запроса
+			// Check request body
 			var req PlaceTPSLOrderRequest
 			err := json.NewDecoder(r.Body).Decode(&req)
 			assert.NoError(t, err)
@@ -911,7 +911,7 @@ func TestPlaceTPSLOrderService(t *testing.T) {
 
 		client.SetBaseURL(server.URL)
 
-		// Тест успешного запроса
+		// Test successful request
 		order, err := client.NewPlaceTPSLOrderService().
 			InstId("ETH-USDT").
 			MarginMode(MarginModeCross).
@@ -952,7 +952,7 @@ func TestPlaceTPSLOrderService(t *testing.T) {
 
 		client.SetBaseURL(server.URL)
 
-		// Тест с ошибкой
+		// Test with error
 		order, err := client.NewPlaceTPSLOrderService().
 			InstId("ETH-USDT").
 			MarginMode(MarginModeCross).
@@ -962,7 +962,7 @@ func TestPlaceTPSLOrderService(t *testing.T) {
 			Size("1").
 			ClientOrderId("test123").
 			Do(context.Background())
-		assert.NoError(t, err) // API возвращает ошибку в теле ответа
+		assert.NoError(t, err) // API returns error in response body
 		assert.NotNil(t, order)
 		assert.Equal(t, "50001", order.Code)
 		assert.Equal(t, "Parameter error", order.Msg)
@@ -975,7 +975,7 @@ func TestPlaceTPSLOrderService(t *testing.T) {
 	t.Run("validation errors", func(t *testing.T) {
 		client := &RestClient{}
 
-		// Тест с пустым instId
+		// Test with empty instId
 		_, err := client.NewPlaceTPSLOrderService().
 			MarginMode(MarginModeCross).
 			PositionSide(PositionSideShort).
@@ -986,7 +986,7 @@ func TestPlaceTPSLOrderService(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "instId required")
 
-		// Тест с пустым marginMode
+		// Test with empty marginMode
 		_, err = client.NewPlaceTPSLOrderService().
 			InstId("ETH-USDT").
 			PositionSide(PositionSideShort).
@@ -997,7 +997,7 @@ func TestPlaceTPSLOrderService(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "marginMode required")
 
-		// Тест с пустым positionSide
+		// Test with empty positionSide
 		_, err = client.NewPlaceTPSLOrderService().
 			InstId("ETH-USDT").
 			MarginMode(MarginModeCross).
@@ -1008,7 +1008,7 @@ func TestPlaceTPSLOrderService(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "positionSide required")
 
-		// Тест с пустым side
+		// Test with empty side
 		_, err = client.NewPlaceTPSLOrderService().
 			InstId("ETH-USDT").
 			MarginMode(MarginModeCross).
@@ -1019,7 +1019,7 @@ func TestPlaceTPSLOrderService(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "side required")
 
-		// Тест с пустым size
+		// Test with empty size
 		_, err = client.NewPlaceTPSLOrderService().
 			InstId("ETH-USDT").
 			MarginMode(MarginModeCross).
@@ -1030,7 +1030,7 @@ func TestPlaceTPSLOrderService(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "size required")
 
-		// Тест без TP и SL
+		// Test without TP and SL
 		_, err = client.NewPlaceTPSLOrderService().
 			InstId("ETH-USDT").
 			MarginMode(MarginModeCross).
@@ -1041,7 +1041,7 @@ func TestPlaceTPSLOrderService(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "at least one of tpTriggerPrice or slTriggerPrice required")
 
-		// Тест с TP trigger без TP order price
+		// Test with TP trigger without TP order price
 		_, err = client.NewPlaceTPSLOrderService().
 			InstId("ETH-USDT").
 			MarginMode(MarginModeCross).
@@ -1062,14 +1062,14 @@ func TestPlaceAlgoOrderService(t *testing.T) {
 			assert.Equal(t, "/api/v1/trade/order-algo", r.URL.Path)
 			assert.Equal(t, "POST", r.Method)
 
-			// Проверяем заголовки аутентификации
+			// Check authentication headers
 			assert.NotEmpty(t, r.Header.Get("ACCESS-KEY"))
 			assert.NotEmpty(t, r.Header.Get("ACCESS-SIGN"))
 			assert.NotEmpty(t, r.Header.Get("ACCESS-TIMESTAMP"))
 			assert.NotEmpty(t, r.Header.Get("ACCESS-NONCE"))
 			assert.NotEmpty(t, r.Header.Get("ACCESS-PASSPHRASE"))
 
-			// Проверяем тело запроса
+			// Check request body
 			var req PlaceAlgoOrderRequest
 			err := json.NewDecoder(r.Body).Decode(&req)
 			assert.NoError(t, err)
@@ -1084,7 +1084,7 @@ func TestPlaceAlgoOrderService(t *testing.T) {
 			assert.Equal(t, "last", req.TriggerPriceType)
 			assert.Equal(t, "test123", req.ClientOrderId)
 
-			// Проверяем прикрепленные TP/SL ордера
+			// Check attached TP/SL orders
 			assert.Len(t, req.AttachAlgoOrders, 1)
 			assert.Equal(t, "3500", req.AttachAlgoOrders[0].TpTriggerPrice)
 			assert.Equal(t, "3600", req.AttachAlgoOrders[0].TpOrderPrice)
@@ -1122,7 +1122,7 @@ func TestPlaceAlgoOrderService(t *testing.T) {
 			},
 		}
 
-		// Тест успешного запроса
+		// Test successful request
 		order, err := client.NewPlaceAlgoOrderService().
 			InstId("ETH-USDT").
 			MarginMode(MarginModeCross).
@@ -1149,7 +1149,7 @@ func TestPlaceAlgoOrderService(t *testing.T) {
 	t.Run("validation errors", func(t *testing.T) {
 		client := &RestClient{}
 
-		// Тест с пустым instId
+		// Test with empty instId
 		_, err := client.NewPlaceAlgoOrderService().
 			MarginMode(MarginModeCross).
 			PositionSide(PositionSideShort).
@@ -1161,7 +1161,7 @@ func TestPlaceAlgoOrderService(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "instId required")
 
-		// Тест с пустым marginMode
+		// Test with empty marginMode
 		_, err = client.NewPlaceAlgoOrderService().
 			InstId("ETH-USDT").
 			PositionSide(PositionSideShort).
@@ -1173,7 +1173,7 @@ func TestPlaceAlgoOrderService(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "marginMode required")
 
-		// Тест с пустым positionSide
+		// Test with empty positionSide
 		_, err = client.NewPlaceAlgoOrderService().
 			InstId("ETH-USDT").
 			MarginMode(MarginModeCross).
@@ -1185,7 +1185,7 @@ func TestPlaceAlgoOrderService(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "positionSide required")
 
-		// Тест с пустым side
+		// Test with empty side
 		_, err = client.NewPlaceAlgoOrderService().
 			InstId("ETH-USDT").
 			MarginMode(MarginModeCross).
@@ -1197,7 +1197,7 @@ func TestPlaceAlgoOrderService(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "side required")
 
-		// Тест с пустым size
+		// Test with empty size
 		_, err = client.NewPlaceAlgoOrderService().
 			InstId("ETH-USDT").
 			MarginMode(MarginModeCross).
@@ -1209,7 +1209,7 @@ func TestPlaceAlgoOrderService(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "size required")
 
-		// Тест с пустым orderType
+		// Test with empty orderType
 		_, err = client.NewPlaceAlgoOrderService().
 			InstId("ETH-USDT").
 			MarginMode(MarginModeCross).
@@ -1221,7 +1221,7 @@ func TestPlaceAlgoOrderService(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "orderType required")
 
-		// Тест с пустым triggerPrice
+		// Test with empty triggerPrice
 		_, err = client.NewPlaceAlgoOrderService().
 			InstId("ETH-USDT").
 			MarginMode(MarginModeCross).
@@ -1242,14 +1242,14 @@ func TestCancelOrderService(t *testing.T) {
 			assert.Equal(t, "/api/v1/trade/cancel-order", r.URL.Path)
 			assert.Equal(t, "POST", r.Method)
 
-			// Проверяем заголовки аутентификации
+			// Check authentication headers
 			assert.NotEmpty(t, r.Header.Get("ACCESS-KEY"))
 			assert.NotEmpty(t, r.Header.Get("ACCESS-SIGN"))
 			assert.NotEmpty(t, r.Header.Get("ACCESS-TIMESTAMP"))
 			assert.NotEmpty(t, r.Header.Get("ACCESS-NONCE"))
 			assert.NotEmpty(t, r.Header.Get("ACCESS-PASSPHRASE"))
 
-			// Проверяем тело запроса
+			// Check request body
 			var req CancelOrderRequest
 			err := json.NewDecoder(r.Body).Decode(&req)
 			assert.NoError(t, err)
@@ -1273,7 +1273,7 @@ func TestCancelOrderService(t *testing.T) {
 
 		client.SetBaseURL(server.URL)
 
-		// Тест успешного запроса с orderId
+		// Test successful request with orderId
 		order, err := client.NewCancelOrderService().
 			InstId("BTC-USDT").
 			OrderId("23209016").
@@ -1311,7 +1311,7 @@ func TestCancelOrderService(t *testing.T) {
 
 		client.SetBaseURL(server.URL)
 
-		// Тест успешного запроса с clientOrderId
+		// Test successful request with clientOrderId
 		order, err := client.NewCancelOrderService().
 			ClientOrderId("test123").
 			Do(context.Background())
@@ -1323,7 +1323,7 @@ func TestCancelOrderService(t *testing.T) {
 	t.Run("validation errors", func(t *testing.T) {
 		client := &RestClient{}
 
-		// Тест без orderId и clientOrderId
+		// Test without orderId and clientOrderId
 		_, err := client.NewCancelOrderService().Do(context.Background())
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "either orderId or clientOrderId required")
@@ -1337,14 +1337,14 @@ func TestCancelBatchOrdersService(t *testing.T) {
 			assert.Equal(t, "/api/v1/trade/cancel-batch-orders", r.URL.Path)
 			assert.Equal(t, "POST", r.Method)
 
-			// Проверяем заголовки аутентификации
+			// Check authentication headers
 			assert.NotEmpty(t, r.Header.Get("ACCESS-KEY"))
 			assert.NotEmpty(t, r.Header.Get("ACCESS-SIGN"))
 			assert.NotEmpty(t, r.Header.Get("ACCESS-TIMESTAMP"))
 			assert.NotEmpty(t, r.Header.Get("ACCESS-NONCE"))
 			assert.NotEmpty(t, r.Header.Get("ACCESS-PASSPHRASE"))
 
-			// Проверяем тело запроса
+			// Check request body
 			var orders []CancelOrderRequest
 			err := json.NewDecoder(r.Body).Decode(&orders)
 			assert.NoError(t, err)
@@ -1385,7 +1385,7 @@ func TestCancelBatchOrdersService(t *testing.T) {
 
 		client.SetBaseURL(server.URL)
 
-		// Создаем список ордеров для отмены
+		// Create list of orders to cancel
 		orders := []CancelOrderRequest{
 			{
 				InstID:  "ETH-USDT",
@@ -1397,7 +1397,7 @@ func TestCancelBatchOrdersService(t *testing.T) {
 			},
 		}
 
-		// Тест успешного запроса
+		// Test successful request
 		response, err := client.NewCancelBatchOrdersService().
 			Orders(orders).
 			Do(context.Background())
@@ -1407,7 +1407,7 @@ func TestCancelBatchOrdersService(t *testing.T) {
 		assert.Equal(t, "success", response.Msg)
 		assert.Len(t, response.Data, 3)
 
-		// Проверяем результаты
+		// Check results
 		assert.Equal(t, "22619976", response.Data[0].OrderId)
 		assert.Equal(t, "eeeeee112231121", response.Data[0].ClientOrderId)
 		assert.Equal(t, "0", response.Data[0].Code)
@@ -1424,12 +1424,12 @@ func TestCancelBatchOrdersService(t *testing.T) {
 	t.Run("validation errors", func(t *testing.T) {
 		client := &RestClient{}
 
-		// Тест с пустым списком ордеров
+		// Test with empty list of orders
 		_, err := client.NewCancelBatchOrdersService().Do(context.Background())
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "at least one order required")
 
-		// Тест с превышением лимита ордеров
+		// Test with exceeding order limit
 		orders := make([]CancelOrderRequest, 21)
 		for i := range orders {
 			orders[i] = CancelOrderRequest{InstID: "ETH-USDT", OrderId: fmt.Sprintf("%d", i)}
@@ -1438,7 +1438,7 @@ func TestCancelBatchOrdersService(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "too many orders (max 20)")
 
-		// Тест с разными instId
+		// Test with different instId
 		orders = []CancelOrderRequest{
 			{InstID: "ETH-USDT", OrderId: "1"},
 			{InstID: "BTC-USDT", OrderId: "2"},
@@ -1447,7 +1447,7 @@ func TestCancelBatchOrdersService(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "all orders must have the same instId")
 
-		// Тест без orderId и clientOrderId
+		// Test without orderId and clientOrderId
 		orders = []CancelOrderRequest{
 			{InstID: "ETH-USDT"},
 		}
@@ -1476,14 +1476,14 @@ func TestCancelTPSLOrderService(t *testing.T) {
 			assert.Equal(t, "/api/v1/trade/cancel-tpsl", r.URL.Path)
 			assert.Equal(t, "POST", r.Method)
 
-			// Проверяем заголовки аутентификации
+			// Check authentication headers
 			assert.NotEmpty(t, r.Header.Get("ACCESS-KEY"))
 			assert.NotEmpty(t, r.Header.Get("ACCESS-SIGN"))
 			assert.NotEmpty(t, r.Header.Get("ACCESS-TIMESTAMP"))
 			assert.NotEmpty(t, r.Header.Get("ACCESS-NONCE"))
 			assert.NotEmpty(t, r.Header.Get("ACCESS-PASSPHRASE"))
 
-			// Проверяем тело запроса
+			// Check request body
 			var orders []CancelTPSLOrderRequest
 			err := json.NewDecoder(r.Body).Decode(&orders)
 			assert.NoError(t, err)
@@ -1530,7 +1530,7 @@ func TestCancelTPSLOrderService(t *testing.T) {
 			},
 		}
 
-		// Тест успешного запроса
+		// Test successful request
 		response, err := client.NewCancelTPSLOrderService().
 			Orders(orders).
 			Do(context.Background())
@@ -1540,7 +1540,7 @@ func TestCancelTPSLOrderService(t *testing.T) {
 		assert.Equal(t, "success", response.Msg)
 		assert.Len(t, response.Data, 2)
 
-		// Проверяем результаты
+		// Check results
 		assert.Equal(t, "1009", response.Data[0].TpslId)
 		assert.Equal(t, "500", response.Data[0].Code)
 		assert.Equal(t, "Cancel failed as the order has been filled, triggered, canceled or does not exist.", response.Data[0].Msg)
@@ -1553,12 +1553,12 @@ func TestCancelTPSLOrderService(t *testing.T) {
 	t.Run("validation errors", func(t *testing.T) {
 		client := &RestClient{}
 
-		// Тест с пустым списком ордеров
+		// Test with empty list of orders
 		_, err := client.NewCancelTPSLOrderService().Do(context.Background())
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "at least one order required")
 
-		// Тест с превышением лимита ордеров
+		// Test with exceeding order limit
 		orders := make([]CancelTPSLOrderRequest, 21)
 		for i := range orders {
 			orders[i] = CancelTPSLOrderRequest{InstID: "ETH-USDT", TpslId: fmt.Sprintf("%d", i)}
@@ -1567,7 +1567,7 @@ func TestCancelTPSLOrderService(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "too many orders (max 20)")
 
-		// Тест с разными instId
+		// Test with different instId
 		orders = []CancelTPSLOrderRequest{
 			{InstID: "ETH-USDT", TpslId: "1"},
 			{InstID: "BTC-USDT", TpslId: "2"},
@@ -1576,7 +1576,7 @@ func TestCancelTPSLOrderService(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "all orders must have the same instId")
 
-		// Тест без tpslId и clientOrderId
+		// Test without tpslId and clientOrderId
 		orders = []CancelTPSLOrderRequest{
 			{InstID: "ETH-USDT"},
 		}
@@ -1644,7 +1644,7 @@ func TestCancelAlgoOrderService(t *testing.T) {
 	t.Run("validation errors", func(t *testing.T) {
 		client := newTestClient(t)
 
-		// Проверяем, что требуется хотя бы algoId или clientOrderId
+		// Check that either algoId or clientOrderId is required
 		_, err := client.NewCancelAlgoOrderService().Do(context.Background())
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "either algoId or clientOrderId required")
@@ -1691,7 +1691,7 @@ func TestGetPendingOrdersService(t *testing.T) {
 			assert.NotEmpty(t, r.Header.Get("ACCESS-NONCE"))
 			assert.NotEmpty(t, r.Header.Get("ACCESS-PASSPHRASE"))
 
-			// Проверяем параметры запроса
+			// Check request parameters
 			assert.Equal(t, "ETH-USDT", r.URL.Query().Get("instId"))
 			assert.Equal(t, "limit", r.URL.Query().Get("orderType"))
 			assert.Equal(t, "live", r.URL.Query().Get("state"))
@@ -1771,7 +1771,7 @@ func TestGetPendingOrdersService(t *testing.T) {
 			assert.Equal(t, "GET", r.Method)
 			assert.Equal(t, "/api/v1/trade/orders-pending", r.URL.Path)
 
-			// Проверяем параметры пагинации
+			// Check pagination parameters
 			assert.Equal(t, "29531103", r.URL.Query().Get("after"))
 			assert.Equal(t, "50", r.URL.Query().Get("limit"))
 
@@ -1807,7 +1807,7 @@ func TestGetPendingTPSLOrdersService(t *testing.T) {
 			assert.NotEmpty(t, r.Header.Get("ACCESS-NONCE"))
 			assert.NotEmpty(t, r.Header.Get("ACCESS-PASSPHRASE"))
 
-			// Проверяем параметры запроса
+			// Check request parameters
 			assert.Equal(t, "ETH-USDT", r.URL.Query().Get("instId"))
 			assert.Equal(t, "20", r.URL.Query().Get("limit"))
 
@@ -1871,7 +1871,7 @@ func TestGetPendingTPSLOrdersService(t *testing.T) {
 			assert.Equal(t, "GET", r.Method)
 			assert.Equal(t, "/api/v1/trade/orders-tpsl-pending", r.URL.Path)
 
-			// Проверяем параметры пагинации
+			// Check pagination parameters
 			assert.Equal(t, "2411", r.URL.Query().Get("after"))
 			assert.Equal(t, "50", r.URL.Query().Get("limit"))
 
@@ -1907,7 +1907,7 @@ func TestGetPendingAlgoOrdersService(t *testing.T) {
 			assert.NotEmpty(t, r.Header.Get("ACCESS-NONCE"))
 			assert.NotEmpty(t, r.Header.Get("ACCESS-PASSPHRASE"))
 
-			// Проверяем параметры запроса
+			// Check request parameters
 			assert.Equal(t, "ETH-USDT", r.URL.Query().Get("instId"))
 			assert.Equal(t, "trigger", r.URL.Query().Get("orderType"))
 			assert.Equal(t, "20", r.URL.Query().Get("limit"))
@@ -1988,14 +1988,14 @@ func TestGetPendingAlgoOrdersService(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 		}))
 
-		// Проверяем обязательный параметр orderType
+		// Check required orderType parameter
 		_, err := client.NewGetPendingAlgoOrdersService().
 			InstId("ETH-USDT").
 			Do(context.Background())
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "orderType required")
 
-		// Проверяем одновременное использование after и before
+		// Check simultaneous use of after and before
 		_, err = client.NewGetPendingAlgoOrdersService().
 			OrderType("trigger").
 			After("2101").
@@ -2010,7 +2010,7 @@ func TestGetPendingAlgoOrdersService(t *testing.T) {
 			assert.Equal(t, "GET", r.Method)
 			assert.Equal(t, "/api/v1/trade/orders-algo-pending", r.URL.Path)
 
-			// Проверяем параметры пагинации
+			// Check pagination parameters
 			assert.Equal(t, "2101", r.URL.Query().Get("after"))
 			assert.Equal(t, "50", r.URL.Query().Get("limit"))
 			assert.Equal(t, "trigger", r.URL.Query().Get("orderType"))
@@ -2048,7 +2048,7 @@ func TestClosePositionService(t *testing.T) {
 			assert.NotEmpty(t, r.Header.Get("ACCESS-NONCE"))
 			assert.NotEmpty(t, r.Header.Get("ACCESS-PASSPHRASE"))
 
-			// Проверяем тело запроса
+			// Check request body
 			var req ClosePositionRequest
 			err := json.NewDecoder(r.Body).Decode(&req)
 			assert.NoError(t, err)
@@ -2090,7 +2090,7 @@ func TestClosePositionService(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 		}))
 
-		// Проверяем обязательные параметры
+		// Check required parameters
 		_, err := client.NewClosePositionService().
 			Do(context.Background())
 		assert.Error(t, err)
@@ -2161,7 +2161,7 @@ func TestGetOrderHistoryService(t *testing.T) {
 			assert.NotEmpty(t, r.Header.Get("ACCESS-NONCE"))
 			assert.NotEmpty(t, r.Header.Get("ACCESS-PASSPHRASE"))
 
-			// Проверяем параметры запроса
+			// Check request parameters
 			assert.Equal(t, "ETH-USDT", r.URL.Query().Get("instId"))
 			assert.Equal(t, "limit", r.URL.Query().Get("orderType"))
 			assert.Equal(t, "canceled", r.URL.Query().Get("state"))
@@ -2249,7 +2249,7 @@ func TestGetOrderHistoryService(t *testing.T) {
 			w.WriteHeader(http.StatusOK)
 		}))
 
-		// Проверяем, что after и before не могут использоваться одновременно
+		// Check that after and before cannot be used simultaneously
 		_, err := client.NewGetOrderHistoryService().
 			After("123").
 			Before("456").
