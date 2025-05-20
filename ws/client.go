@@ -19,12 +19,13 @@ import (
 )
 
 const (
-	// Ping/pong interval (25 seconds < 30 seconds limit)
-	pingInterval = 25 * time.Second
-	pongTimeout  = 5 * time.Second
+	// Ping/pong interval (20 seconds < 30 seconds limit)
+	pingInterval = 20 * time.Second
+	pongTimeout  = 10 * time.Second
 
 	// New connection limit
-	reconnectDelay = time.Second
+	reconnectDelay = 2 * time.Second
+	maxRetries     = 5
 )
 
 var privateChannels = map[string]struct{}{
@@ -93,7 +94,7 @@ func (c *Client) Connect() error {
 	defer c.mu.Unlock()
 
 	if c.reconnecting {
-		time.Sleep(reconnectDelay) // Limit: 1 connection per second
+		time.Sleep(reconnectDelay)
 	}
 
 	// Close previous connection if exists
@@ -106,7 +107,13 @@ func (c *Client) Connect() error {
 		return err
 	}
 
-	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	dialer := websocket.Dialer{
+		HandshakeTimeout: 10 * time.Second,
+		ReadBufferSize:   32768,
+		WriteBufferSize:  32768,
+	}
+
+	conn, _, err := dialer.Dial(u.String(), nil)
 	if err != nil {
 		return err
 	}
@@ -166,7 +173,7 @@ func (c *Client) setupPingPong() {
 			case <-c.pongTimer.C:
 				if time.Since(c.lastPongTime) > pongTimeout {
 					if c.errorHandler != nil {
-						c.errorHandler(fmt.Errorf("pong timeout"))
+						c.errorHandler(fmt.Errorf("pong timeout after %v", time.Since(c.lastPongTime)))
 					}
 					c.reconnect()
 					return
@@ -186,6 +193,7 @@ func (c *Client) reconnect() {
 	c.reconnecting = true
 	c.mu.Unlock()
 
+	retries := 0
 	for {
 		if err := c.Connect(); err == nil {
 			c.mu.Lock()
@@ -193,7 +201,21 @@ func (c *Client) reconnect() {
 			c.mu.Unlock()
 			return
 		}
-		time.Sleep(reconnectDelay)
+
+		retries++
+		if retries >= maxRetries {
+			if c.errorHandler != nil {
+				c.errorHandler(fmt.Errorf("max reconnection attempts reached"))
+			}
+			c.mu.Lock()
+			c.reconnecting = false
+			c.mu.Unlock()
+			return
+		}
+
+		// Exponential backoff
+		delay := reconnectDelay * time.Duration(retries)
+		time.Sleep(delay)
 	}
 }
 
