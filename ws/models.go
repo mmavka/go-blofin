@@ -1,32 +1,6 @@
-/**
- * @file: models.go
- * @description: Модели для WebSocket BloFin
- * @dependencies: -
- * @created: 2025-05-19
- */
-
 package ws
 
-import (
-	rest "github.com/mmavka/go-blofin/rest"
-)
-
-// LoginRequest for authentication
-
-type LoginRequest struct {
-	Op   string      `json:"op"`
-	Args []LoginArgs `json:"args"`
-}
-
-type LoginArgs struct {
-	ApiKey     string `json:"apiKey"`
-	Passphrase string `json:"passphrase"`
-	Timestamp  string `json:"timestamp"`
-	Sign       string `json:"sign"`
-	Nonce      string `json:"nonce"`
-}
-
-// ChannelArgs represents subscription channel arguments
+// ChannelArgs represents channel subscription arguments
 type ChannelArgs struct {
 	Channel string `json:"channel"`
 	InstId  string `json:"instId"`
@@ -38,378 +12,122 @@ type SubscribeRequest struct {
 	Args []ChannelArgs `json:"args"`
 }
 
-// UnsubscribeRequest represents unsubscription request
-type UnsubscribeRequest struct {
-	Op   string        `json:"op"`
-	Args []ChannelArgs `json:"args"`
-}
-
 // SubscribeResponse represents subscription response
 type SubscribeResponse struct {
-	Event string      `json:"event"`
-	Arg   ChannelArgs `json:"arg"`
-	Code  string      `json:"code,omitempty"`
-	Msg   string      `json:"msg,omitempty"`
-}
-
-// UnsubscribeResponse represents unsubscription response
-type UnsubscribeResponse struct {
-	Event string      `json:"event"`
-	Arg   ChannelArgs `json:"arg"`
-	Code  string      `json:"code,omitempty"`
-	Msg   string      `json:"msg,omitempty"`
-}
-
-// EventResponse for handling login/subscribe/unsubscribe events
-
-type EventResponse struct {
 	Event string      `json:"event"`
 	Arg   ChannelArgs `json:"arg"`
 	Code  string      `json:"code"`
 	Msg   string      `json:"msg"`
 }
 
-// TradeWS — trade data from WS trades channel
+// LoginRequest represents login request
+type LoginRequest struct {
+	Op   string `json:"op"`
+	Args []struct {
+		APIKey     string `json:"apiKey"`
+		Passphrase string `json:"passphrase"`
+		Timestamp  string `json:"timestamp"`
+		Sign       string `json:"sign"`
+		Nonce      string `json:"nonce"`
+	} `json:"args"`
+}
 
-type TradeWS struct {
-	InstID  string `json:"instId"`
-	TradeID string `json:"tradeId"`
+// LoginResponse represents login response
+type LoginResponse struct {
+	Event string `json:"event"`
+	Code  string `json:"code"`
+	Msg   string `json:"msg"`
+}
+
+// Trade represents a trade message
+type Trade struct {
+	InstId  string `json:"instId"`
+	TradeId string `json:"tradeId"`
 	Price   string `json:"price"`
 	Size    string `json:"size"`
 	Side    string `json:"side"`
 	Ts      string `json:"ts"`
 }
 
-type TradeWSMessage struct {
+// TradeMessage represents a trade message with channel info
+type TradeMessage struct {
 	Arg  ChannelArgs `json:"arg"`
-	Data []TradeWS   `json:"data"`
+	Data []Trade     `json:"data"`
 }
 
-// CandleWSMessage — push message for candles channel
+// Candle represents a candlestick data
+type Candle struct {
+	Ts               string `json:"ts"`               // Opening time
+	Open             string `json:"open"`             // Open price
+	High             string `json:"high"`             // Highest price
+	Low              string `json:"low"`              // Lowest price
+	Close            string `json:"close"`            // Close price
+	Vol              string `json:"vol"`              // Trading volume in contracts
+	VolCurrency      string `json:"volCurrency"`      // Trading volume in base currency
+	VolCurrencyQuote string `json:"volCurrencyQuote"` // Trading volume in quote currency
+	Confirm          string `json:"confirm"`          // Candlestick state (0: uncompleted, 1: completed)
+}
 
-type CandleWSMessage struct {
+// CandleMessage represents a candle message with channel info
+type CandleMessage struct {
 	Arg  ChannelArgs `json:"arg"`
-	Data []Candle    `json:"data"`
+	Data [][]string  `json:"data"` // Array of candle data arrays
 }
 
-type Candle = rest.Candle
-
-// OrderBookWSData — order book data from WS order book channel
-
-type OrderBookWSData struct {
-	Asks      [][]string `json:"asks"`
-	Bids      [][]string `json:"bids"`
-	Ts        string     `json:"ts"`
-	PrevSeqId string     `json:"prevSeqId"`
-	SeqId     string     `json:"seqId"`
+// OrderBookLevel represents a single level in the order book
+type OrderBookLevel struct {
+	Price  string `json:"price"`  // Price level
+	Amount string `json:"amount"` // Amount at this price level
 }
 
-// OrderBookWSMessage — push message for order book channel
-
-type OrderBookWSMessage struct {
-	Arg    ChannelArgs     `json:"arg"`
-	Action string          `json:"action"`
-	Data   OrderBookWSData `json:"data"`
+// OrderBookData represents orderbook data
+type OrderBookData struct {
+	Asks      [][]float64 `json:"asks"`      // [price, size]
+	Bids      [][]float64 `json:"bids"`      // [price, size]
+	Ts        string      `json:"ts"`        // Order book generation time
+	PrevSeqId string      `json:"prevSeqId"` // Previous sequence ID
+	SeqId     string      `json:"seqId"`     // Current sequence ID
 }
 
-// TickerWS — ticker data from WS tickers channel
-
-type TickerWS struct {
-	InstID         string `json:"instId"`
-	Last           string `json:"last"`
-	LastSize       string `json:"lastSize"`
-	AskPrice       string `json:"askPrice"`
-	AskSize        string `json:"askSize"`
-	BidPrice       string `json:"bidPrice"`
-	BidSize        string `json:"bidSize"`
-	Open24h        string `json:"open24h"`
-	High24h        string `json:"high24h"`
-	Low24h         string `json:"low24h"`
-	VolCurrency24h string `json:"volCurrency24h"`
-	Vol24h         string `json:"vol24h"`
-	Ts             string `json:"ts"`
+// OrderBookMessage represents orderbook message
+type OrderBookMessage struct {
+	Action string        `json:"action"` // "snapshot" or "update"
+	Arg    ChannelArgs   `json:"arg"`
+	Data   OrderBookData `json:"data"`
 }
 
-type TickerWSMessage struct {
-	Arg  ChannelArgs `json:"arg"`
-	Data []TickerWS  `json:"data"`
-}
-
-// FundingRateWS — funding rate data from WS funding-rate channel
-
-type FundingRateWS struct {
-	InstID      string `json:"instId"`
-	FundingRate string `json:"fundingRate"`
-	FundingTime string `json:"fundingTime"`
-}
-
-type FundingRateWSMessage struct {
-	Arg  ChannelArgs     `json:"arg"`
-	Data []FundingRateWS `json:"data"`
-}
-
-// PositionsRequest represents the request for positions channel
-type PositionsRequest struct {
-	Op   string `json:"op"`
-	Args []struct {
-		Channel string `json:"channel"`
-		InstId  string `json:"instId,omitempty"`
-	} `json:"args"`
-}
-
-// PositionsResponse represents the response for positions channel
-type PositionsResponse struct {
-	Event string `json:"event"`
-	Arg   struct {
-		Channel string `json:"channel"`
-		InstId  string `json:"instId,omitempty"`
-	} `json:"arg"`
-	Code string `json:"code,omitempty"`
-	Msg  string `json:"msg,omitempty"`
-}
-
-// PositionsData represents the push data for positions channel
-type PositionsData struct {
-	Arg struct {
-		Channel string `json:"channel"`
-	} `json:"arg"`
-	Data []Position `json:"data"`
-}
-
-// Position represents a single position
-type Position struct {
-	InstType           string `json:"instType"`
-	InstId             string `json:"instId"`
-	MarginMode         string `json:"marginMode"`
-	PositionId         string `json:"positionId"`
-	PositionSide       string `json:"positionSide"`
-	Positions          string `json:"positions"`
-	AvailablePositions string `json:"availablePositions"`
-	AveragePrice       string `json:"averagePrice"`
-	UnrealizedPnl      string `json:"unrealizedPnl"`
-	UnrealizedPnlRatio string `json:"unrealizedPnlRatio"`
-	Leverage           string `json:"leverage"`
-	LiquidationPrice   string `json:"liquidationPrice"`
-	MarkPrice          string `json:"markPrice"`
-	InitialMargin      string `json:"initialMargin"`
-	Margin             string `json:"margin"`
-	MarginRatio        string `json:"marginRatio"`
-	MaintenanceMargin  string `json:"maintenanceMargin"`
-	Adl                string `json:"adl"`
-	CreateTime         string `json:"createTime"`
-	UpdateTime         string `json:"updateTime"`
-}
-
-// OrdersRequest represents the request for orders channel
-type OrdersRequest struct {
-	Op   string `json:"op"`
-	Args []struct {
-		Channel string `json:"channel"`
-		InstId  string `json:"instId,omitempty"`
-	} `json:"args"`
-}
-
-// OrdersResponse represents the response for orders channel
-type OrdersResponse struct {
-	Event string `json:"event"`
-	Arg   struct {
-		Channel string `json:"channel"`
-		InstId  string `json:"instId,omitempty"`
-	} `json:"arg"`
-	Code string `json:"code,omitempty"`
-	Msg  string `json:"msg,omitempty"`
-}
-
-// OrdersData represents the push data for orders channel
-type OrdersData struct {
-	Action string `json:"action"`
-	Arg    struct {
-		Channel string `json:"channel"`
-	} `json:"arg"`
-	Data []Order `json:"data"`
-}
-
-// Order represents a single order
-type Order struct {
-	InstType           string `json:"instType"`
-	InstId             string `json:"instId"`
-	OrderId            string `json:"orderId"`
-	ClientOrderId      string `json:"clientOrderId"`
-	Price              string `json:"price"`
-	Size               string `json:"size"`
-	OrderType          string `json:"orderType"`
-	Side               string `json:"side"`
-	PositionSide       string `json:"positionSide"`
-	MarginMode         string `json:"marginMode"`
-	FilledSize         string `json:"filledSize"`
-	FilledAmount       string `json:"filledAmount"`
-	AveragePrice       string `json:"averagePrice"`
-	State              string `json:"state"`
-	Leverage           string `json:"leverage"`
-	TpTriggerPrice     string `json:"tpTriggerPrice"`
-	TpTriggerPriceType string `json:"tpTriggerPriceType"`
-	TpOrderPrice       string `json:"tpOrderPrice"`
-	SlTriggerPrice     string `json:"slTriggerPrice"`
-	SlTriggerPriceType string `json:"slTriggerPriceType"`
-	SlOrderPrice       string `json:"slOrderPrice"`
-	Fee                string `json:"fee"`
-	Pnl                string `json:"pnl"`
-	CancelSource       string `json:"cancelSource"`
-	OrderCategory      string `json:"orderCategory"`
-	CreateTime         string `json:"createTime"`
-	UpdateTime         string `json:"updateTime"`
-	ReduceOnly         string `json:"reduceOnly"`
-	BrokerId           string `json:"brokerId"`
-}
-
-// AlgoOrdersRequest represents the request for algo orders channel
-type AlgoOrdersRequest struct {
-	Op   string `json:"op"`
-	Args []struct {
-		Channel string `json:"channel"`
-		InstId  string `json:"instId,omitempty"`
-	} `json:"args"`
-}
-
-// AlgoOrdersResponse represents the response for algo orders channel
-type AlgoOrdersResponse struct {
-	Event string `json:"event"`
-	Arg   struct {
-		Channel string `json:"channel"`
-		InstId  string `json:"instId,omitempty"`
-	} `json:"arg"`
-	Code string `json:"code,omitempty"`
-	Msg  string `json:"msg,omitempty"`
-}
-
-// AlgoOrdersData represents the push data for algo orders channel
-type AlgoOrdersData struct {
-	Action string `json:"action"`
-	Arg    struct {
-		Channel string `json:"channel"`
-	} `json:"arg"`
-	Data []AlgoOrder `json:"data"`
-}
-
-// AlgoOrder represents a single algo order
-type AlgoOrder struct {
-	InstType         string            `json:"instType"`
-	InstId           string            `json:"instId"`
-	TpslId           string            `json:"tpslId"`
-	AlgoId           string            `json:"algoId"`
-	ClientOrderId    string            `json:"clientOrderId"`
-	Size             string            `json:"size"`
-	OrderType        string            `json:"orderType"`
-	Side             string            `json:"side"`
-	PositionSide     string            `json:"positionSide"`
-	MarginMode       string            `json:"marginMode"`
-	Leverage         string            `json:"leverage"`
-	State            string            `json:"state"`
-	TpTriggerPrice   string            `json:"tpTriggerPrice"`
-	TpOrderPrice     string            `json:"tpOrderPrice"`
-	SlTriggerPrice   string            `json:"slTriggerPrice"`
-	SlOrderPrice     string            `json:"slOrderPrice"`
-	TriggerPrice     string            `json:"triggerPrice"`
-	TriggerPriceType string            `json:"triggerPriceType"`
-	OrderPrice       string            `json:"orderPrice"`
-	ActualSize       string            `json:"actualSize"`
-	ActualSide       string            `json:"actualSide"`
-	ReduceOnly       string            `json:"reduceOnly"`
-	CancelType       string            `json:"cancelType"`
-	CreateTime       string            `json:"createTime"`
-	UpdateTime       string            `json:"updateTime"`
-	Tag              string            `json:"tag"`
-	BrokerId         string            `json:"brokerId"`
-	AttachAlgoOrders []AttachAlgoOrder `json:"attachAlgoOrders,omitempty"`
-}
-
-// AttachAlgoOrder represents an attached TP/SL order
-type AttachAlgoOrder struct {
-	TpTriggerPrice     string `json:"tpTriggerPrice"`
-	TpTriggerPriceType string `json:"tpTriggerPriceType"`
-	TpOrderPrice       string `json:"tpOrderPrice"`
-	SlTriggerPriceType string `json:"slTriggerPriceType"`
-	SlTriggerPrice     string `json:"slTriggerPrice"`
-	SlOrderPrice       string `json:"slOrderPrice"`
-}
-
-// AccountRequest represents the request for account channel
-type AccountRequest struct {
-	Op   string `json:"op"`
-	Args []struct {
-		Channel string `json:"channel"`
-	} `json:"args"`
-}
-
-// AccountResponse represents the response for account channel
-type AccountResponse struct {
-	Event string `json:"event"`
-	Arg   struct {
-		Channel string `json:"channel"`
-	} `json:"arg"`
-	Code string `json:"code,omitempty"`
-	Msg  string `json:"msg,omitempty"`
-}
-
-// AccountData represents the push data for account channel
-type AccountData struct {
-	Arg struct {
-		Channel string `json:"channel"`
-	} `json:"arg"`
-	Data Account `json:"data"`
-}
-
-// Account represents account information
-type Account struct {
-	Ts             string          `json:"ts"`
-	TotalEquity    string          `json:"totalEquity"`
-	IsolatedEquity string          `json:"isolatedEquity"`
-	Details        []AccountDetail `json:"details"`
-}
-
-// AccountDetail represents detailed asset information for a currency
-type AccountDetail struct {
-	Currency              string `json:"currency"`
-	Equity                string `json:"equity"`
-	Balance               string `json:"balance"`
-	Ts                    string `json:"ts"`
-	IsolatedEquity        string `json:"isolatedEquity"`
-	EquityUsd             string `json:"equityUsd"`
-	AvailableEquity       string `json:"availableEquity"`
-	Available             string `json:"available"`
-	Frozen                string `json:"frozen"`
-	OrderFrozen           string `json:"orderFrozen"`
-	UnrealizedPnl         string `json:"unrealizedPnl"`
-	IsolatedUnrealizedPnl string `json:"isolatedUnrealizedPnl"`
-	CoinUsdPrice          string `json:"coinUsdPrice"`
-	SpotAvailable         string `json:"spotAvailable"`
-	Liability             string `json:"liability"`
-	BorrowFrozen          string `json:"borrowFrozen"`
-	MarginRatio           string `json:"marginRatio"`
-}
-
-// OrderBookEntry represents a single entry in the order book
-type OrderBookEntry struct {
-	Price float64
-	Size  float64
-}
-
-// OrderBook represents the current state of the order book
-type OrderBook struct {
-	Bids []OrderBookEntry
-	Asks []OrderBookEntry
-}
-
-// Ticker represents the current market ticker
+// Ticker represents a ticker data
 type Ticker struct {
-	LastPrice          float64
-	LastSize           float64
-	BestBidPrice       float64
-	BestBidSize        float64
-	BestAskPrice       float64
-	BestAskSize        float64
-	Volume24h          float64
-	PriceChange        float64
-	PriceChangePercent float64
-	Timestamp          int64
+	InstId         string `json:"instId"`         // Instrument ID
+	Last           string `json:"last"`           // Last traded price
+	LastSize       string `json:"lastSize"`       // Last traded size
+	AskPrice       string `json:"askPrice"`       // Best ask price
+	AskSize        string `json:"askSize"`        // Best ask size
+	BidPrice       string `json:"bidPrice"`       // Best bid price
+	BidSize        string `json:"bidSize"`        // Best bid size
+	Open24h        string `json:"open24h"`        // Open price in the past 24 hours
+	High24h        string `json:"high24h"`        // Highest price in the past 24 hours
+	Low24h         string `json:"low24h"`         // Lowest price in the past 24 hours
+	VolCurrency24h string `json:"volCurrency24h"` // 24h trading volume in base currency
+	Vol24h         string `json:"vol24h"`         // 24h trading volume in contracts
+	Ts             string `json:"ts"`             // Ticker data generation time
+}
+
+// TickerMessage represents a ticker message with channel info
+type TickerMessage struct {
+	Arg  ChannelArgs `json:"arg"`
+	Data []Ticker    `json:"data"`
+}
+
+// FundingRate represents a funding rate data
+type FundingRate struct {
+	InstId      string `json:"instId"`      // Instrument ID
+	FundingRate string `json:"fundingRate"` // Current funding rate
+	FundingTime string `json:"fundingTime"` // Funding time of the upcoming settlement
+}
+
+// FundingRateMessage represents a funding rate message with channel info
+type FundingRateMessage struct {
+	Arg  ChannelArgs   `json:"arg"`
+	Data []FundingRate `json:"data"`
 }
