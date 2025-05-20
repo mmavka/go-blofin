@@ -1,41 +1,41 @@
 # go-blofin
 
-Библиотека для работы с криптобиржей BloFin на Go
+Go library for working with BloFin cryptocurrency exchange
 
-## Описание
+## Description
 
-`go-blofin` — это модульная библиотека для работы с REST и WebSocket API BloFin, вдохновлённая архитектурой go-binance. Поддерживает публичные и приватные методы, подписку на события, генерацию подписей, обработку ошибок и покрыта unit-тестами.
+`go-blofin` is a modular library for working with BloFin REST and WebSocket API, inspired by go-binance architecture. Supports public and private methods, event subscriptions, signature generation, error handling and covered with unit tests.
 
-## Возможности
-- Публичные REST методы: инструменты, тикеры, стакан, сделки, свечи, mark price, funding rate
-- Приватные REST методы: баланс, позиции, ордера, история переводов и выводов
-- WebSocket: подписка на trades, candles, tickers, order book, funding-rate
-- Генерация подписей для приватных запросов
-- Полное покрытие unit-тестами
-- Современная архитектура, расширяемость, чистый код
+## Features
+- Public REST methods: instruments, tickers, order book, trades, candles, mark price, funding rate
+- Private REST methods: balance, positions, orders, transfer and withdrawal history
+- WebSocket: subscribe to trades, candles, tickers, order book, funding-rate
+- Signature generation for private requests
+- Full unit test coverage
+- Modern architecture, extensibility, clean code
 
-## Структура проекта
-- `rest/` — REST-клиент, сервисы, модели
-- `ws/` — WebSocket-клиент, модели, подписи
-- `auth/` — генерация подписей
-- `utils/` — базовые ошибки
-- `docs/` — документация (архитектура, changelog, задачи, Q&A)
+## Project Structure
+- `rest/` — REST client, services, models
+- `ws/` — WebSocket client, models, signatures
+- `auth/` — signature generation
+- `utils/` — base errors
+- `docs/` — documentation (architecture, changelog, tasks, Q&A)
 
-## Быстрый старт
+## Quick Start
 ```go
 import "github.com/mmavka/go-blofin/rest"
 
 client := rest.NewDefaultRestClient()
 resp, err := client.NewGetInstrumentsService().Do(context.Background())
 if err != nil {
-    // обработка ошибки
+    // handle error
 }
 for _, inst := range resp.Data {
     fmt.Println(inst.InstID)
 }
 ```
 
-## Пример WebSocket
+## WebSocket Example
 ```go
 import "github.com/mmavka/go-blofin/ws"
 
@@ -52,7 +52,7 @@ for trade := range wsClient.Trades() {
 }
 ```
 
-## Обработка ошибок WebSocket
+## WebSocket Error Handling
 ```go
 wsClient := ws.NewDefaultClient()
 wsClient.SetErrorHandler(func(err error) {
@@ -60,7 +60,7 @@ wsClient.SetErrorHandler(func(err error) {
 })
 ```
 
-## Кастомный endpoint
+## Custom Endpoint
 ```go
 import "github.com/mmavka/go-blofin/rest"
 import "github.com/mmavka/go-blofin/ws"
@@ -72,17 +72,17 @@ wsClient := ws.NewDefaultClient()
 wsClient.SetURL("wss://sandbox-ws.blofin.com/ws")
 ```
 
-## Особенности подписки на WebSocket-каналы
-- Публичные каналы (trades, candles, tickers, order book и др.) не требуют аутентификации.
-- Приватные каналы (orders, positions, orders-algo и др.) требуют предварительного вызова Login.
-- Общая длина запроса на подписку не должна превышать 4096 байт.
-- При нарушении этих условий будет возвращена ошибка.
+## WebSocket Channel Subscription Features
+- Public channels (trades, candles, tickers, order book, etc.) do not require authentication.
+- Private channels (orders, positions, orders-algo, etc.) require prior Login call.
+- Total subscription request length should not exceed 4096 bytes.
+- Violation of these conditions will result in an error.
 
-## Требования
+## Requirements
 - Go 1.24+
 - [resty](https://github.com/go-resty/resty)
 - [goccy/go-json](https://github.com/goccy/go-json)
 - [gorilla/websocket](https://github.com/gorilla/websocket)
 
-## Лицензия
+## License
 MIT 
