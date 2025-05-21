@@ -1,11 +1,15 @@
 // Package ws provides WebSocket client for Blofin public channels.
 //
-// This file implements the base WebSocket client, message routing, reconnect logic, and logging.
+// This file implements the base WebSocket client, message routing, and logging.
+//
+// NOTE: Reconnect logic is NOT implemented in the library. Connection loss and errors are returned to the caller.
+// The application is responsible for reconnecting and resubscribing if needed.
 package ws
 
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"sync"
 	"time"
 
@@ -25,11 +29,10 @@ type subscription struct {
 
 // Client is a base WebSocket client with reconnect and logging support.
 type Client struct {
-	url       string
-	conn      *websocket.Conn
-	log       Logger
-	subs      map[string]struct{}
-	reconnect bool
+	url  string
+	conn *websocket.Conn
+	log  Logger
+	subs map[string]struct{}
 
 	mu sync.Mutex
 
@@ -52,9 +55,7 @@ type Client struct {
 	ctx           context.Context
 	cancel        context.CancelFunc
 	wg            sync.WaitGroup
-	reconnecting  bool
-
-	pingLoopStarted bool // Флаг: запущен ли pingLoop
+	onError       func(error) // Error callback
 }
 
 // Logger is an interface for event logging.
@@ -70,7 +71,7 @@ type Logger interface {
 func NewClient(url string, logger ...Logger) *Client {
 	var l Logger
 	if len(logger) == 0 || logger[0] == nil {
-		l = NewDefaultLogger(LogLevelWarn)
+		l = NewDefaultLogger(LogLevelError)
 	} else {
 		l = logger[0]
 	}
@@ -79,7 +80,6 @@ func NewClient(url string, logger ...Logger) *Client {
 		url:                 url,
 		log:                 l,
 		subs:                make(map[string]struct{}),
-		reconnect:           true,
 		handlersCandles:     make(map[string][]func(models.WSCandlestickMsg)),
 		handlersTrades:      make(map[string][]func(models.WSTradeMsg)),
 		handlersTickers:     make(map[string][]func(models.WSTickerMsg)),
@@ -107,7 +107,7 @@ func (c *Client) Connect(ctx context.Context) error {
 	}
 	conn, _, err := d.DialContext(ctx, c.url, nil)
 	if err != nil {
-		c.log.Errorf("Connect: error: %v", err)
+		c.log.Warnf("Connect: error: %v", err)
 		return err
 	}
 	c.conn = conn
@@ -142,16 +142,18 @@ func (c *Client) pingLoop() {
 		select {
 		case <-time.After(c.pingInterval):
 			if err := c.conn.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(time.Second)); err != nil {
-				c.log.Errorf("Ping error: %v", err)
-				go c.reconnectWS()
-				c.log.Debugf("pingLoop: return after ping error (goroutines: %d)", runtime.NumGoroutine())
+				c.log.Warnf("Ping error: %v", err)
+				if c.onError != nil {
+					c.onError(err)
+				}
 				return
 			}
 			c.log.Debugf("Ping sent (lastPong: %s)", c.lastPong.Format("2006/01/02 15:04:05.000000000"))
 			if time.Since(c.lastPong) > c.pongTimeout {
-				c.log.Errorf("Pong timeout, reconnecting...")
-				go c.reconnectWS()
-				c.log.Debugf("pingLoop: return after pong timeout (goroutines: %d)", runtime.NumGoroutine())
+				c.log.Warnf("Pong timeout, connection considered lost")
+				if c.onError != nil {
+					c.onError(fmt.Errorf("pong timeout"))
+				}
 				return
 			}
 		case <-c.ctx.Done():
@@ -178,9 +180,10 @@ func (c *Client) readLoop() {
 			c.log.Tracef("readLoop: ReadMessage start (goroutines: %d)", runtime.NumGoroutine())
 			_, msg, err := c.conn.ReadMessage()
 			if err != nil {
-				c.log.Errorf("Read error: %v", err)
-				go c.reconnectWS()
-				c.log.Debugf("readLoop: return after read error (goroutines: %d)", runtime.NumGoroutine())
+				c.log.Warnf("Read error: %v", err)
+				if c.onError != nil {
+					c.onError(err)
+				}
 				return
 			}
 			c.log.Tracef("RAW: %s", string(msg)) // Логируем raw сообщение
@@ -218,10 +221,6 @@ func (c *Client) readLoop() {
 				c.log.Debugf("readLoop: continue unmatched message (goroutines: %d)", runtime.NumGoroutine())
 				continue
 			}
-			// Если есть поле data (push-сообщение), стартуем pingLoop
-			// if len(base.Data) > 0 {
-			// 	c.startPingLoopOnce(0)
-			// }
 			ch := base.Arg.Channel
 			matched := false
 			switch {
@@ -373,164 +372,7 @@ func (c *Client) Close() error {
 	return nil
 }
 
-// reconnectWS performs reconnect and resubscribe.
-func (c *Client) reconnectWS() {
-	c.log.Debugf("reconnectWS: started (goroutines: %d)", runtime.NumGoroutine())
-	c.mu.Lock()
-	if c.reconnecting {
-		c.mu.Unlock()
-		c.log.Debugf("reconnectWS: already reconnecting, return (goroutines: %d)", runtime.NumGoroutine())
-		return
-	}
-	c.reconnecting = true
-	c.pingLoopStarted = false // сбросить флаг при reconnect
-	c.mu.Unlock()
-
-	c.log.Debugf("reconnectWS: calling cancel (goroutines: %d)", runtime.NumGoroutine())
-	c.cancel()
-	c.log.Debugf("reconnectWS: cancel called (goroutines: %d)", runtime.NumGoroutine())
-	if c.conn != nil {
-		_ = c.conn.Close()
-		c.log.Debugf("reconnectWS: conn.Close called (goroutines: %d)", runtime.NumGoroutine())
-	}
-	c.log.Debugf("reconnectWS: waiting for goroutines to finish (goroutines: %d)", runtime.NumGoroutine())
-	c.wg.Wait()
-	c.log.Debugf("reconnectWS: goroutines finished (goroutines: %d)", runtime.NumGoroutine())
-	ctx, cancel := context.WithCancel(context.Background())
-	c.ctx = ctx
-	c.cancel = cancel
-	c.log.Debugf("reconnectWS: calling Connect (goroutines: %d)", runtime.NumGoroutine())
-	if err := c.Connect(ctx); err != nil {
-		c.log.Errorf("Reconnect failed: %v", err)
-		c.mu.Lock()
-		c.reconnecting = false
-		c.mu.Unlock()
-		c.log.Debugf("reconnectWS: Connect failed, return (goroutines: %d)", runtime.NumGoroutine())
-		return
-	}
-	c.log.Debugf("reconnectWS: calling resubscribeAll (goroutines: %d)", runtime.NumGoroutine())
-	c.resubscribeAll()
-	// c.startPingLoopOnce(2 * time.Second)
-	c.mu.Lock()
-	c.reconnecting = false
-	c.mu.Unlock()
-	c.log.Debugf("reconnectWS: finished (goroutines: %d)", runtime.NumGoroutine())
-}
-
-// deduplicateSubscriptions removes duplicate subscriptions.
-func (c *Client) deduplicateSubscriptions() {
-	c.mu.Lock()
-	unique := make(map[string]subscription)
-	for _, s := range c.subscriptions {
-		key := s.channel + ":" + s.instID + ":" + s.stype
-		unique[key] = s
-	}
-	c.subscriptions = make([]subscription, 0, len(unique))
-	for _, s := range unique {
-		c.subscriptions = append(c.subscriptions, s)
-	}
-	c.mu.Unlock()
-}
-
-// resubscribeAll resends all active subscriptions.
-func (c *Client) resubscribeAll() {
-	c.log.Debugf("resubscribeAll: started (goroutines: %d)", runtime.NumGoroutine())
-	c.deduplicateSubscriptions()
-	c.mu.Lock()
-	subs := make([]subscription, len(c.subscriptions))
-	copy(subs, c.subscriptions)
-	c.mu.Unlock()
-
-	// Не отправляем unsubscribe, если соединение было восстановлено — сервер уже "забыл" старые подписки
-
-	// Просто отправляем subscribe как обычно
-	for _, s := range subs {
-		c.log.Debugf("resubscribeAll: before subscribe %s:%s type=%s (goroutines: %d)", s.channel, s.instID, s.stype, runtime.NumGoroutine())
-		switch s.channel {
-		case "trades":
-			if s.stype == "callback" {
-				err := c.SubscribeTrades(context.Background(), s.instID, s.handler.(func(models.WSTradeMsg)))
-				if err != nil {
-					c.log.Errorf("Resubscribe trades error: %v", err)
-				}
-			} else {
-				_, err := c.SubscribeTradesChan(context.Background(), s.instID)
-				if err != nil {
-					c.log.Errorf("Resubscribe trades error: %v", err)
-				}
-			}
-		case "tickers":
-			if s.stype == "callback" {
-				err := c.SubscribeTickers(context.Background(), s.instID, s.handler.(func(models.WSTickerMsg)))
-				if err != nil {
-					c.log.Errorf("Resubscribe tickers error: %v", err)
-				}
-			} else {
-				_, err := c.SubscribeTickersChan(context.Background(), s.instID)
-				if err != nil {
-					c.log.Errorf("Resubscribe tickers error: %v", err)
-				}
-			}
-		case "fundingrate":
-			if s.stype == "callback" {
-				err := c.SubscribeFundingRate(context.Background(), s.instID, s.handler.(func(models.WSFundingRateMsg)))
-				if err != nil {
-					c.log.Errorf("Resubscribe fundingrate error: %v", err)
-				}
-			} else {
-				_, err := c.SubscribeFundingRateChan(context.Background(), s.instID)
-				if err != nil {
-					c.log.Errorf("Resubscribe fundingrate error: %v", err)
-				}
-			}
-		case "books", "books5":
-			if s.stype == "callback" {
-				err := c.SubscribeOrderBook(context.Background(), s.channel, s.instID, s.handler.(func(models.WSOrderBookMsg)))
-				if err != nil {
-					c.log.Errorf("Resubscribe orderbook error: %v", err)
-				}
-			} else {
-				_, err := c.SubscribeOrderBookChan(context.Background(), s.channel, s.instID)
-				if err != nil {
-					c.log.Errorf("Resubscribe orderbook error: %v", err)
-				}
-			}
-		default:
-			if s.stype == "callback" {
-				err := c.SubscribeCandlesticks(context.Background(), s.channel, s.instID, s.handler.(func(models.WSCandlestickMsg)))
-				if err != nil {
-					c.log.Errorf("Resubscribe candles error: %v", err)
-				}
-			} else {
-				// Только отправляем subscribe-запрос, не создаём новый канал
-				req := map[string]interface{}{
-					"op":   "subscribe",
-					"args": []map[string]string{{"channel": s.channel, "instId": s.instID}},
-				}
-				msg, _ := json.Marshal(req)
-				err := c.conn.WriteMessage(1, msg)
-				if err != nil {
-					c.log.Errorf("Resubscribe candles error: %v", err)
-				}
-			}
-		}
-		c.log.Debugf("resubscribeAll: after subscribe %s:%s type=%s (goroutines: %d)", s.channel, s.instID, s.stype, runtime.NumGoroutine())
-	}
-	c.log.Debugf("resubscribeAll: finished (goroutines: %d)", runtime.NumGoroutine())
-}
-
-// Запуск pingLoop только если он ещё не запущен
-func (c *Client) startPingLoopOnce(delay time.Duration) {
-	c.mu.Lock()
-	if c.pingLoopStarted {
-		c.mu.Unlock()
-		return
-	}
-	c.pingLoopStarted = true
-	c.mu.Unlock()
-	c.wg.Add(1)
-	go func() {
-		time.Sleep(delay)
-		c.pingLoop()
-	}()
+// SetErrorHandler sets the error callback for connection errors.
+func (c *Client) SetErrorHandler(handler func(error)) {
+	c.onError = handler
 }

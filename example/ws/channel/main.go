@@ -18,6 +18,10 @@ func main() {
 	// Или не передавать logger вовсе, тогда будет только error-логирование:
 	logger := ws.NewDefaultLogger(ws.LogLevelDebug)
 	client := ws.NewClient(ws.WSURLProd, logger)
+	errCh := make(chan error, 1)
+	client.SetErrorHandler(func(err error) {
+		errCh <- err
+	})
 	ctx := context.Background()
 	if err := client.Connect(ctx); err != nil {
 		fmt.Println("connect error:", err)
@@ -58,6 +62,10 @@ func main() {
 		}
 	}()
 
-	<-ch
-	client.UnsubscribeCandlesticks(ctx, ws.ChannelCandle1m, "BTC-USDT")
+	select {
+	case <-ch:
+		client.UnsubscribeCandlesticks(ctx, ws.ChannelCandle1m, "BTC-USDT")
+	case err := <-errCh:
+		fmt.Println("connection error:", err)
+	}
 }

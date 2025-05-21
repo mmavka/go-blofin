@@ -15,6 +15,10 @@ import (
 func main() {
 	logger := ws.NewDefaultLogger(ws.LogLevelDebug)
 	client := ws.NewClient(ws.WSURLProd, logger)
+	errCh := make(chan error, 1)
+	client.SetErrorHandler(func(err error) {
+		errCh <- err
+	})
 	ctx := context.Background()
 	if err := client.Connect(ctx); err != nil {
 		fmt.Println("connect error:", err)
@@ -52,6 +56,10 @@ func main() {
 	}()
 
 	fmt.Println("Subscribed to BTC-USDT and ETH-USDT 1m candles (callback). Press Ctrl+C to exit.")
-	<-ch
-	client.UnsubscribeCandlesticks(ctx, ws.ChannelCandle1m, "BTC-USDT")
+	select {
+	case <-ch:
+		client.UnsubscribeCandlesticks(ctx, ws.ChannelCandle1m, "BTC-USDT")
+	case err := <-errCh:
+		fmt.Println("connection error:", err)
+	}
 }
