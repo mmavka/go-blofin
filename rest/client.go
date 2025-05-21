@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/mmavka/go-blofin/internal/models"
+	"github.com/mmavka/go-blofin/models"
 )
 
 // Client is a REST API client for Blofin.

@@ -12,7 +12,7 @@ import (
 	"runtime"
 
 	"github.com/gorilla/websocket"
-	"github.com/mmavka/go-blofin/internal/models"
+	"github.com/mmavka/go-blofin/models"
 )
 
 type subscription struct {

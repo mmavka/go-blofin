@@ -7,7 +7,7 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/mmavka/go-blofin/internal/models"
+	"github.com/mmavka/go-blofin/models"
 )
 
 // MessageHandler is a callback for incoming messages.

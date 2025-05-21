@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/url"
 
-	"github.com/mmavka/go-blofin/internal/rest"
+	"github.com/mmavka/go-blofin/rest"
 )
 
 func main() {

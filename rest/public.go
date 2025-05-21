@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/mmavka/go-blofin/internal/models"
+	"github.com/mmavka/go-blofin/models"
 )
 
 // GetInstruments fetches the list of trading instruments from Blofin public API.

@@ -7,8 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/mmavka/go-blofin/internal/models"
-	"github.com/mmavka/go-blofin/internal/ws"
+	"github.com/mmavka/go-blofin/models"
+	"github.com/mmavka/go-blofin/ws"
 )
 
 func main() {
