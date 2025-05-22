@@ -125,6 +125,10 @@ func (c *Client) Connect(ctx context.Context) error {
 	c.log.Debugf("SetPongHandler installed after connect (goroutines: %d)", runtime.NumGoroutine())
 
 	c.wg.Add(1)
+	go c.pingLoop()
+	c.log.Debugf("Connect: pingLoop started (goroutines: %d)", runtime.NumGoroutine())
+
+	c.wg.Add(1)
 	c.log.Debugf("Connect: wg.Add(1) (goroutines: %d)", runtime.NumGoroutine())
 	go c.readLoop()
 	return nil
