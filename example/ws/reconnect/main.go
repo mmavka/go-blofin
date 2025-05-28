@@ -10,7 +10,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 
@@ -49,8 +49,7 @@ func main() {
 
 	for {
 		ctx := context.Background()
-		logger := ws.NewDefaultLogger(ws.LogLevelDebug)
-		client := ws.NewClient(ws.WSURLProd, logger)
+		client := ws.NewClient(ws.WSURLProd)
 
 		// Канал для обработки ошибок соединения
 		errCh := make(chan error, 1)
@@ -60,7 +59,7 @@ func main() {
 
 		err := client.Connect(ctx)
 		if err != nil {
-			log.Printf("connect error: %v", err)
+			slog.Error("connect error", "error", err)
 			continue
 		}
 
@@ -68,17 +67,17 @@ func main() {
 		for _, sub := range subscriptions {
 			err := client.SubscribeCandlesticks(ctx, sub.Channel, sub.InstID, sub.Handler)
 			if err != nil {
-				log.Printf("subscribe error: %v", err)
+				slog.Error("subscribe error", "error", err)
 			}
 		}
 
 		select {
 		case <-sigCh:
-			log.Println("shutting down...")
+			slog.Info("shutting down...")
 			client.Close()
 			return
 		case err := <-errCh:
-			log.Printf("connection error: %v, reconnecting...", err)
+			slog.Error("connection error, reconnecting...", "error", err)
 			client.Close()
 			continue
 		}

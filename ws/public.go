@@ -41,10 +41,8 @@ func (c *Client) SubscribeCandlesticks(ctx context.Context, channel, instID stri
 	}
 	msg, _ := json.Marshal(req)
 	if err := c.conn.WriteMessage(1, msg); err != nil {
-		c.log.Warnf("subscribe error: %v", err)
 		return err
 	}
-	c.log.Infof("Subscribed to %s:%s", channel, instID)
 	return nil
 }
 
@@ -79,10 +77,8 @@ func (c *Client) SubscribeCandlesticksChan(ctx context.Context, channel, instID 
 	}
 	msg, _ := json.Marshal(req)
 	if err := c.conn.WriteMessage(1, msg); err != nil {
-		c.log.Warnf("subscribe error: %v", err)
 		return nil, err
 	}
-	c.log.Infof("Subscribed to %s:%s (chan)", channel, instID)
 	return ch, nil
 }
 
@@ -106,7 +102,6 @@ func (c *Client) UnsubscribeCandlesticks(ctx context.Context, channel, instID st
 	}
 	c.mu.Unlock()
 	if c.conn == nil {
-		c.log.Infof("Unsubscribed (local only) from %s:%s: connection is closed", channel, instID)
 		return nil
 	}
 	req := map[string]interface{}{
@@ -115,10 +110,8 @@ func (c *Client) UnsubscribeCandlesticks(ctx context.Context, channel, instID st
 	}
 	msg, _ := json.Marshal(req)
 	if err := c.conn.WriteMessage(1, msg); err != nil {
-		c.log.Warnf("unsubscribe error: %v", err)
 		return err
 	}
-	c.log.Infof("Unsubscribed from %s:%s", channel, instID)
 	return nil
 }
 
@@ -137,10 +130,8 @@ func (c *Client) SubscribeTrades(ctx context.Context, instID string, handler fun
 	}
 	msg, _ := json.Marshal(req)
 	if err := c.conn.WriteMessage(1, msg); err != nil {
-		c.log.Warnf("subscribe error: %v", err)
 		return err
 	}
-	c.log.Infof("Subscribed to trades:%s", instID)
 	return nil
 }
 
@@ -158,10 +149,8 @@ func (c *Client) SubscribeTradesChan(ctx context.Context, instID string) (<-chan
 	}
 	msg, _ := json.Marshal(req)
 	if err := c.conn.WriteMessage(1, msg); err != nil {
-		c.log.Warnf("subscribe error: %v", err)
 		return nil, err
 	}
-	c.log.Infof("Subscribed to trades:%s (chan)", instID)
 	return ch, nil
 }
 
@@ -176,7 +165,6 @@ func (c *Client) UnsubscribeTrades(ctx context.Context, instID string) error {
 	}
 	c.mu.Unlock()
 	if c.conn == nil {
-		c.log.Infof("Unsubscribed (local only) from trades:%s: connection is closed", instID)
 		return nil
 	}
 	req := map[string]interface{}{
@@ -185,10 +173,8 @@ func (c *Client) UnsubscribeTrades(ctx context.Context, instID string) error {
 	}
 	msg, _ := json.Marshal(req)
 	if err := c.conn.WriteMessage(1, msg); err != nil {
-		c.log.Warnf("unsubscribe error: %v", err)
 		return err
 	}
-	c.log.Infof("Unsubscribed from trades:%s", instID)
 	return nil
 }
 
@@ -207,10 +193,8 @@ func (c *Client) SubscribeTickers(ctx context.Context, instID string, handler fu
 	}
 	msg, _ := json.Marshal(req)
 	if err := c.conn.WriteMessage(1, msg); err != nil {
-		c.log.Warnf("subscribe error: %v", err)
 		return err
 	}
-	c.log.Infof("Subscribed to tickers:%s", instID)
 	return nil
 }
 
@@ -227,10 +211,8 @@ func (c *Client) SubscribeTickersChan(ctx context.Context, instID string) (<-cha
 	}
 	msg, _ := json.Marshal(req)
 	if err := c.conn.WriteMessage(1, msg); err != nil {
-		c.log.Warnf("subscribe error: %v", err)
 		return nil, err
 	}
-	c.log.Infof("Subscribed to tickers:%s (chan)", instID)
 	return ch, nil
 }
 
@@ -244,7 +226,6 @@ func (c *Client) UnsubscribeTickers(ctx context.Context, instID string) error {
 	}
 	c.mu.Unlock()
 	if c.conn == nil {
-		c.log.Infof("Unsubscribed (local only) from tickers:%s: connection is closed", instID)
 		return nil
 	}
 	req := map[string]interface{}{
@@ -253,10 +234,8 @@ func (c *Client) UnsubscribeTickers(ctx context.Context, instID string) error {
 	}
 	msg, _ := json.Marshal(req)
 	if err := c.conn.WriteMessage(1, msg); err != nil {
-		c.log.Warnf("unsubscribe error: %v", err)
 		return err
 	}
-	c.log.Infof("Unsubscribed from tickers:%s", instID)
 	return nil
 }
 
@@ -275,10 +254,8 @@ func (c *Client) SubscribeOrderBook(ctx context.Context, channel, instID string,
 	}
 	msg, _ := json.Marshal(req)
 	if err := c.conn.WriteMessage(1, msg); err != nil {
-		c.log.Warnf("subscribe error: %v", err)
 		return err
 	}
-	c.log.Infof("Subscribed to %s:%s", channel, instID)
 	return nil
 }
 
@@ -295,10 +272,8 @@ func (c *Client) SubscribeOrderBookChan(ctx context.Context, channel, instID str
 	}
 	msg, _ := json.Marshal(req)
 	if err := c.conn.WriteMessage(1, msg); err != nil {
-		c.log.Warnf("subscribe error: %v", err)
 		return nil, err
 	}
-	c.log.Infof("Subscribed to %s:%s (chan)", channel, instID)
 	return ch, nil
 }
 
@@ -312,7 +287,6 @@ func (c *Client) UnsubscribeOrderBook(ctx context.Context, channel, instID strin
 	}
 	c.mu.Unlock()
 	if c.conn == nil {
-		c.log.Infof("Unsubscribed (local only) from %s:%s: connection is closed", channel, instID)
 		return nil
 	}
 	req := map[string]interface{}{
@@ -321,10 +295,8 @@ func (c *Client) UnsubscribeOrderBook(ctx context.Context, channel, instID strin
 	}
 	msg, _ := json.Marshal(req)
 	if err := c.conn.WriteMessage(1, msg); err != nil {
-		c.log.Warnf("unsubscribe error: %v", err)
 		return err
 	}
-	c.log.Infof("Unsubscribed from %s:%s", channel, instID)
 	return nil
 }
 
@@ -343,10 +315,8 @@ func (c *Client) SubscribeFundingRate(ctx context.Context, instID string, handle
 	}
 	msg, _ := json.Marshal(req)
 	if err := c.conn.WriteMessage(1, msg); err != nil {
-		c.log.Warnf("subscribe error: %v", err)
 		return err
 	}
-	c.log.Infof("Subscribed to fundingrate:%s", instID)
 	return nil
 }
 
@@ -363,10 +333,8 @@ func (c *Client) SubscribeFundingRateChan(ctx context.Context, instID string) (<
 	}
 	msg, _ := json.Marshal(req)
 	if err := c.conn.WriteMessage(1, msg); err != nil {
-		c.log.Warnf("subscribe error: %v", err)
 		return nil, err
 	}
-	c.log.Infof("Subscribed to fundingrate:%s (chan)", instID)
 	return ch, nil
 }
 
@@ -380,7 +348,6 @@ func (c *Client) UnsubscribeFundingRate(ctx context.Context, instID string) erro
 	}
 	c.mu.Unlock()
 	if c.conn == nil {
-		c.log.Infof("Unsubscribed (local only) from fundingrate:%s: connection is closed", instID)
 		return nil
 	}
 	req := map[string]interface{}{
@@ -389,9 +356,7 @@ func (c *Client) UnsubscribeFundingRate(ctx context.Context, instID string) erro
 	}
 	msg, _ := json.Marshal(req)
 	if err := c.conn.WriteMessage(1, msg); err != nil {
-		c.log.Warnf("unsubscribe error: %v", err)
 		return err
 	}
-	c.log.Infof("Unsubscribed from fundingrate:%s", instID)
 	return nil
 }

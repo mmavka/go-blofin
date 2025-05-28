@@ -13,8 +13,7 @@ import (
 )
 
 func main() {
-	logger := ws.NewDefaultLogger(ws.LogLevelDebug)
-	client := ws.NewClient(ws.WSURLProd, logger)
+	client := ws.NewClient(ws.WSURLProd)
 	errCh := make(chan error, 1)
 	client.SetErrorHandler(func(err error) {
 		errCh <- err

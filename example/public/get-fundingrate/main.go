@@ -4,8 +4,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/url"
+	"os"
 
 	"github.com/mmavka/go-blofin/rest"
 )
@@ -14,14 +15,15 @@ func main() {
 	client := rest.NewClient() // Uses BaseURLProd by default
 
 	params := url.Values{}
-	// params.Set("instId", "BTC-USDT") // Optional: filter by instrument
+	params.Set("instId", "BTC-USDT")
 
-	rates, err := client.GetFundingRate(context.Background(), params)
+	fundingRates, err := client.GetFundingRate(context.Background(), params)
 	if err != nil {
-		log.Fatalf("failed to get funding rate: %v", err)
+		slog.Error("failed to get funding rate", "error", err)
+		os.Exit(1)
 	}
 
-	for _, r := range rates {
-		fmt.Printf("%+v\n", r)
+	for _, fr := range fundingRates {
+		fmt.Printf("%+v\n", fr)
 	}
 }

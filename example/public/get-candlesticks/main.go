@@ -4,8 +4,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/url"
+	"os"
 
 	"github.com/mmavka/go-blofin/rest"
 )
@@ -15,17 +16,16 @@ func main() {
 
 	params := url.Values{}
 	params.Set("instId", "BTC-USDT")
-	params.Set("bar", "1m")  // Optional: 1m/3m/5m/15m/30m/1H/2H/4H/6H/8H/12H/1D/3D/1W/1M. Default 1m
-	params.Set("limit", "5") // Optional: number of candles (default 500) max 1440
-	//params.Set("after", "1716151200000") // Optional: Pagination of data to return records earlier than the requested ts
-	//params.Set("before", "1716151200000") // Optional: Pagination of data to return records newer than the requested ts. The latest data will be returned when using before individually
+	params.Set("bar", "1m")    // Required: bar size
+	params.Set("limit", "100") // Optional: number of candlesticks. The maximum is 300. The default is 100
 
-	candles, err := client.GetCandlesticks(context.Background(), params)
+	candlesticks, err := client.GetCandlesticks(context.Background(), params)
 	if err != nil {
-		log.Fatalf("failed to get candlesticks: %v", err)
+		slog.Error("failed to get candlesticks", "error", err)
+		os.Exit(1)
 	}
 
-	for _, c := range candles {
+	for _, c := range candlesticks {
 		fmt.Printf("%+v\n", c)
 	}
 }

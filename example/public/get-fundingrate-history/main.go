@@ -4,8 +4,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/url"
+	"os"
 
 	"github.com/mmavka/go-blofin/rest"
 )
@@ -14,17 +15,16 @@ func main() {
 	client := rest.NewClient() // Uses BaseURLProd by default
 
 	params := url.Values{}
-	params.Set("instId", "BTC-USDT") // required
-	// params.Set("limit", "10")        // Optional: number of records (default 100) max 100
-	// params.Set("before", "<timestamp>") // Optional
-	// params.Set("after", "<timestamp>") // Optional
+	params.Set("instId", "BTC-USDT")
+	params.Set("limit", "10") // Optional: number of records. The maximum is 100. The default is 100
 
-	rates, err := client.GetFundingRateHistory(context.Background(), params)
+	history, err := client.GetFundingRateHistory(context.Background(), params)
 	if err != nil {
-		log.Fatalf("failed to get funding rate history: %v", err)
+		slog.Error("failed to get funding rate history", "error", err)
+		os.Exit(1)
 	}
 
-	for _, r := range rates {
-		fmt.Printf("%+v\n", r)
+	for _, h := range history {
+		fmt.Printf("%+v\n", h)
 	}
 }

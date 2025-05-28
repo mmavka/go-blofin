@@ -12,12 +12,7 @@ import (
 )
 
 func main() {
-	// Можно явно указать уровень логирования:
-	// logger := ws.NewDefaultLogger(ws.LogLevelDebug)
-	// client := ws.NewClient(ws.WSURLProd, logger)
-	// Или не передавать logger вовсе, тогда будет только error-логирование:
-	logger := ws.NewDefaultLogger(ws.LogLevelDebug)
-	client := ws.NewClient(ws.WSURLProd, logger)
+	client := ws.NewClient(ws.WSURLProd)
 	errCh := make(chan error, 1)
 	client.SetErrorHandler(func(err error) {
 		errCh <- err

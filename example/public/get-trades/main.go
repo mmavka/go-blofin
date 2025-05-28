@@ -4,8 +4,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/url"
+	"os"
 
 	"github.com/mmavka/go-blofin/rest"
 )
@@ -19,7 +20,8 @@ func main() {
 
 	trades, err := client.GetTrades(context.Background(), params)
 	if err != nil {
-		log.Fatalf("failed to get trades: %v", err)
+		slog.Error("failed to get trades", "error", err)
+		os.Exit(1)
 	}
 
 	for _, t := range trades {

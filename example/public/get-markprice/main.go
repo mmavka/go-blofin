@@ -4,8 +4,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/url"
+	"os"
 
 	"github.com/mmavka/go-blofin/rest"
 )
@@ -14,14 +15,15 @@ func main() {
 	client := rest.NewClient() // Uses BaseURLProd by default
 
 	params := url.Values{}
-	// params.Set("instId", "BTC-USDT") // Optional: filter by instrument
+	params.Set("instType", "SWAP") // Required: SWAP, FUTURES, OPTION
 
-	prices, err := client.GetMarkPrice(context.Background(), params)
+	markPrices, err := client.GetMarkPrice(context.Background(), params)
 	if err != nil {
-		log.Fatalf("failed to get mark price: %v", err)
+		slog.Error("failed to get mark price", "error", err)
+		os.Exit(1)
 	}
 
-	for _, p := range prices {
-		fmt.Printf("%+v\n", p)
+	for _, mp := range markPrices {
+		fmt.Printf("%+v\n", mp)
 	}
 }
